@@ -86,7 +86,7 @@ const UserWalletTransactions = () => {
 
       try {
         const res = await axios.get(
-          `http://64.227.165.232:8080/user/wallet/get/transactions/${tokenData.data.user_id}`,
+          `https://server.paybazaar.in/user/wallet/get/transactions/${tokenData.data.user_id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

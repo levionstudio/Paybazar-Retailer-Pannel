@@ -88,7 +88,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "http://64.227.165.232:8080/user/login/validate/otp",
+        "https://server.paybazaar.in/user/login/validate/otp",
         {
           user_phone: phone,
           user_otp: data.otp,
