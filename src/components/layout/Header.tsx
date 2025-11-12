@@ -85,13 +85,7 @@ export function Header({ walletBalance }: HeaderProps) {
             </span>
           </div>
 
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-xs flex items-center justify-center text-white">
-              3
-            </span>
-          </Button>
+    
 
           {/* User Menu */}
           <DropdownMenu>
@@ -103,11 +97,10 @@ export function Header({ walletBalance }: HeaderProps) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-              <DropdownMenuItem>Security</DropdownMenuItem>
-              <DropdownMenuItem>Preferences</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={()=>{
+                localStorage.removeItem("authToken");
+                window.location.href = "/login";
+              }}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

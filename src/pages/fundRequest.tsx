@@ -184,11 +184,11 @@ const RequestFunds = () => {
       >
         <Header walletBalance={walletBalance} />
         <div className="flex-1 overflow-y-auto">
-          <main className="p-6 flex flex-col items-center space-y-8">
+          <main className="p-6 flex flex-col items-center space-y-8 ">
             {/* Static Bank Details Card */}
-            <Card className="max-w-2xl w-full shadow-md border border-border rounded-xl overflow-hidden animate-fade-in">
-              <CardHeader className="bg-gradient-secondary rounded-t-xl">
-                <CardTitle className="text-xl font-semibold text-white">
+             <Card className="shadow-md border border-border rounded-xl overflow-hidden animate-fade-in ">
+                <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-xl">
+                  <CardTitle className="text-2xl font-semibold">
                   Our Bank Details
                 </CardTitle>
                 <CardDescription className="text-white/80 mt-1">
@@ -208,6 +208,20 @@ const RequestFunds = () => {
                   <p className="text-black">IFSC Code</p>
                   <p>{STATIC_BANK_DETAILS.ifsc_code}</p>
                 </div>
+                  <div>
+                  <p className="text-black">Bank Name</p>
+                  <p>IDFC FIRST Bank</p>
+                </div>
+                <div>
+                  <p className="text-black">Account Number</p>
+                  <p>10248252306</p>
+                </div>
+
+                  <div>
+                  <p className="text-black">IFSC Code</p>
+                  <p>IDFB0020137</p>
+                </div>
+
               </CardContent>
             </Card>
 
