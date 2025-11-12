@@ -24,7 +24,10 @@ const phoneSchema = z.object({
 });
 
 const otpSchema = z.object({
-  otp: z.string().length(4, "OTP must be 4 digits"),
+  otp: z
+    .string()
+    .length(4, "OTP must be 4 digits")
+    .regex(/^\d+$/, "OTP must contain only numbers"),
 });
 
 type PhoneFormData = z.infer<typeof phoneSchema>;
@@ -37,7 +40,6 @@ export default function Login() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [otp,setOtp] = useState("");
 
   const {
     register: registerPhone,
@@ -45,6 +47,9 @@ export default function Login() {
     formState: { errors: phoneErrors },
   } = useForm<PhoneFormData>({
     resolver: zodResolver(phoneSchema),
+    defaultValues: {
+      phone: "",
+    },
   });
 
   const {
@@ -53,6 +58,9 @@ export default function Login() {
     formState: { errors: otpErrors },
   } = useForm<OtpFormData>({
     resolver: zodResolver(otpSchema),
+    defaultValues: {
+      otp: "",
+    },
   });
 
   const onSendOtp = async (data: PhoneFormData) => {
@@ -240,11 +248,12 @@ export default function Login() {
                     <Input
                       id="otp"
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       placeholder="Enter OTP"
-                      value={otp}
+                      maxLength={4}
                       {...registerOtp("otp")}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="h-14 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#0d3154] focus:ring-[#0d3154]/50 text-lg"
+                      className="h-14 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#0d3154] focus:ring-[#0d3154]/50 text-lg text-center tracking-widest"
                       disabled={isLoading}
                     />
                     {otpErrors.otp && (
