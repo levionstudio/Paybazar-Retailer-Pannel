@@ -40,6 +40,7 @@ export default function Login() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
 
   const {
     register: registerPhone,
@@ -89,6 +90,42 @@ export default function Login() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const onResendOtp = async () => {
+    if (!phone) {
+      toast({
+        title: "Error",
+        description: "Phone number not found. Please go back and enter your phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsResendingOtp(true);
+    try {
+      const response = await axios.post(
+        "https://server.paybazaar.in/user/login/send/otp",
+        { user_phone: phone }
+      );
+
+      if (response.data.status === "success") {
+        toast({
+          title: "OTP Resent",
+          description: "Please check your phone for the new OTP.",
+        });
+      } else {
+        throw new Error(response.data.message || "Failed to resend OTP");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error Resending OTP",
+        description: error.response?.data?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingOtp(false);
     }
   };
 
@@ -261,13 +298,28 @@ export default function Login() {
                     )}
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-14 bg-gradient-to-r from-[#0d3154] to-blue-900 text-white font-semibold text-lg rounded-xl shadow-lg hover:opacity-90 transition-opacity duration-300"
-                  >
-                    {isLoading ? "Verifying..." : "Verify OTP"}
-                  </Button>
+                  <div className="space-y-3">
+                    <Button
+                      type="submit"
+                      disabled={isLoading || isResendingOtp}
+                      className="w-full h-14 bg-gradient-to-r from-[#0d3154] to-blue-900 text-white font-semibold text-lg rounded-xl shadow-lg hover:opacity-90 transition-opacity duration-300"
+                    >
+                      {isLoading ? "Verifying..." : "Verify OTP"}
+                    </Button>
+
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-sm text-slate-600">Didn't receive OTP?</p>
+                      <Button
+                        type="button"
+                        variant="link"
+                        onClick={onResendOtp}
+                        disabled={isLoading || isResendingOtp}
+                        className="text-sm text-[#0d3154] font-semibold hover:underline p-0 h-auto"
+                      >
+                        {isResendingOtp ? "Resending..." : "Resend OTP"}
+                      </Button>
+                    </div>
+                  </div>
                 </form>
               )}
             </CardContent>
