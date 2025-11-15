@@ -14,15 +14,16 @@ import { ArrowLeft, TrendingUp, IndianRupee } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface CommissionData {
-  amountRange: string;
-  commissionRate: number;
+  minAmount: number;
+  maxAmount: number;
+  commissionAmount: number;
 }
 
 const commissionData: CommissionData[] = [
-  { amountRange: "100-1000", commissionRate: 1 },
-  { amountRange: "1001-4000", commissionRate: 3 },
-  { amountRange: "4001-8000", commissionRate: 7 },
-  { amountRange: "8001-10000", commissionRate: 10 },
+  { minAmount: 100, maxAmount: 1000, commissionAmount: 1 },
+  { minAmount: 1001, maxAmount: 4000, commissionAmount: 3 },
+  { minAmount: 4001, maxAmount: 8000, commissionAmount: 7 },
+  { minAmount: 8001, maxAmount: 10000, commissionAmount: 10 },
 ];
 
 const MyCommission = () => {
@@ -47,8 +48,8 @@ const MyCommission = () => {
       <AppSidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        <div className="flex-1">
+        <Header walletBalance={0} />
+        <div className="flex-1 bg-muted/10">
           {/* Header */}
           <header className="paybazaar-gradient text-white p-4 border-b">
             <div className="flex items-center gap-4">
@@ -60,34 +61,37 @@ const MyCommission = () => {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-bold">My Commission</h1>
+              <h1 className="text-2xl font-bold">My Margin</h1>
             </div>
           </header>
 
           {/* Main Content */}
-          <main className="p-6 space-y-6">
+          <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-6">
             {/* Commission Table Card */}
-            <Card className="shadow-lg">
-              <CardHeader className="paybazaar-gradient text-white rounded-t-lg">
-                <CardTitle className="text-xl font-semibold">
+            <Card className="w-full overflow-hidden rounded-2xl border border-border/60 shadow-xl">
+              <CardHeader className="paybazaar-gradient rounded-none border-b border-border/40 text-white">
+                <CardTitle className="text-center text-xl font-semibold">
                   Aadhar Enable Payment System
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="w-full text-center">
                     <TableHeader>
-                      <TableRow className="bg-slate-50">
-                        <TableHead className="font-semibold text-slate-700 py-4">
-                          <div className="flex items-center gap-2">
-                            <IndianRupee className="h-4 w-4 text-paybazaar-blue" />
-                            AMOUNT (₹)
+                      <TableRow className="bg-slate-50 text-center">
+                        <TableHead className="py-4 text-center text-base font-semibold uppercase tracking-wide text-slate-700">
+                          <div className="mx-auto flex w-full items-center justify-center gap-2">
+                            <div className="text-slate-700">
+                            Amount(RS)
+                            </div>
+                        
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold text-slate-700 py-4">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-paybazaar-blue" />
-                            COMMISSION RATE (₹)
+                        <TableHead className="py-4 text-center text-base font-semibold uppercase tracking-wide text-slate-700">
+                          <div className="mx-auto flex w-full items-center justify-center gap-2">
+                            <div className="text-slate-700">
+                            Commission (RS)
+                            </div>
                           </div>
                         </TableHead>
                       </TableRow>
@@ -97,15 +101,16 @@ const MyCommission = () => {
                         <TableRow
                           key={index}
                           className={`
-                          ${index % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
-                          hover:text-paybazaar-blue transition-colors duration-200
+                          ${index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
+                          transition-colors duration-200 hover:bg-paybazaar-blue/5
                         `}
                         >
-                          <TableCell className="py-4 font-medium text-slate-700">
-                            {row.amountRange}
+                          <TableCell className="py-4 text-center text-base font-semibold text-slate-700">
+                            ₹{row.minAmount.toLocaleString("en-IN")} - ₹
+                            {row.maxAmount.toLocaleString("en-IN")}
                           </TableCell>
-                          <TableCell className="py-4 font-medium text-slate-700">
-                            {row.commissionRate}
+                          <TableCell className="py-4 text-center text-base font-semibold text-slate-700">
+                            ₹{row.commissionAmount.toLocaleString("en-IN")}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -115,33 +120,7 @@ const MyCommission = () => {
               </CardContent>
             </Card>
 
-            {/* Summary and Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Summary Card */}
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg text-slate-800">
-                    Summary
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">
-                      Total Earnings
-                    </p>
-                    <p className="text-3xl font-bold text-green-600">
-                      ₹{totalEarnings.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">Last Updated</p>
-                    <p className="text-sm font-medium text-slate-700">
-                      {lastUpdated}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+        
           </main>
         </div>
       </div>

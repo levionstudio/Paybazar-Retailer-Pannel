@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 interface AddBeneficiaryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAdd?: (data: BeneficiaryFormData) => void;
+  bankToIFSC?: Record<string, string>;
 }
 
 interface BeneficiaryFormData {
@@ -26,17 +28,21 @@ interface BeneficiaryFormData {
   ifsc: string;
   accountNumber: string;
   beneficiaryName: string;
+  mobileNumber: string;
 }
 
 export function AddBeneficiaryDialog({
   open,
   onOpenChange,
+  onAdd,
+  bankToIFSC = {},
 }: AddBeneficiaryDialogProps) {
   const [formData, setFormData] = useState<BeneficiaryFormData>({
     bank: "",
     ifsc: "",
     accountNumber: "",
     beneficiaryName: "",
+    mobileNumber: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,6 +57,8 @@ export function AddBeneficiaryDialog({
     "Axis Bank",
     "Kotak Mahindra Bank",
     "IndusInd Bank",
+    "IDFC FIRST Bank",
+    "IDFC Bank Limited",
   ];
 
   const validateForm = () => {
@@ -68,6 +76,11 @@ export function AddBeneficiaryDialog({
     }
     if (!formData.beneficiaryName)
       newErrors.beneficiaryName = "Beneficiary name is required";
+    if (!formData.mobileNumber)
+      newErrors.mobileNumber = "Mobile number is required";
+    if (formData.mobileNumber && !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+      newErrors.mobileNumber = "Invalid mobile number";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -92,7 +105,9 @@ export function AddBeneficiaryDialog({
 
     if (!validateForm()) return;
 
-    console.log("Beneficiary data:", formData);
+    if (onAdd) {
+      onAdd(formData);
+    }
 
     // Reset form and close dialog
     setFormData({
@@ -100,11 +115,10 @@ export function AddBeneficiaryDialog({
       ifsc: "",
       accountNumber: "",
       beneficiaryName: "",
+      mobileNumber: "",
     });
     setErrors({});
     onOpenChange(false);
-
-    alert("Beneficiary added successfully!");
   };
 
   const handleCancel = () => {
@@ -113,9 +127,19 @@ export function AddBeneficiaryDialog({
       ifsc: "",
       accountNumber: "",
       beneficiaryName: "",
+      mobileNumber: "",
     });
     setErrors({});
     onOpenChange(false);
+  };
+
+  const handleBankChange = (value: string) => {
+    const ifsc = bankToIFSC[value] || "";
+    setFormData({
+      ...formData,
+      bank: value,
+      ifsc: ifsc,
+    });
   };
 
   return (
@@ -135,9 +159,7 @@ export function AddBeneficiaryDialog({
             </Label>
             <Select
               value={formData.bank}
-              onValueChange={(value) =>
-                setFormData({ ...formData, bank: value })
-              }
+              onValueChange={handleBankChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="--Select Bank--" />
@@ -231,18 +253,39 @@ export function AddBeneficiaryDialog({
             )}
           </div>
 
+          {/* Mobile Number */}
+          <div className="space-y-2">
+            <Label htmlFor="mobileNumber" className="text-sm font-medium">
+              Mobile Number
+            </Label>
+            <Input
+              id="mobileNumber"
+              type="text"
+              value={formData.mobileNumber}
+              onChange={(e) =>
+                setFormData({ ...formData, mobileNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })
+              }
+              placeholder="Enter Mobile Number"
+              maxLength={10}
+            />
+            {errors.mobileNumber && (
+              <p className="text-red-500 text-xs">{errors.mobileNumber}</p>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               type="button"
               onClick={handleCancel}
-              className="flex-1 bg-gray-800 hover:bg-gray-900 text-white"
+              variant="outline"
+              className="flex-1"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-gray-800 hover:bg-gray-900 text-white"
+              className="flex-1 paybazaar-gradient text-white"
             >
               Submit
             </Button>

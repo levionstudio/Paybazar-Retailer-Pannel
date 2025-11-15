@@ -17,6 +17,13 @@ import {
   Activity,
   PersonStanding,
   Key,
+  User,
+  Icon,
+  UserCheckIcon,
+  Home,
+  CalendarMinus,
+  Calendar1,
+  GitGraph,
 } from "lucide-react";
 
 import { jwtDecode } from "jwt-decode";
@@ -35,9 +42,14 @@ import { title } from "process";
 
 // ✅ Retailer navigation items
 const retailerNavItems = [
+  { title: "Dashbaord", href: "/dashboard", icon: Home },
+  {title:"Profile", href: "/profile", icon: User},
+  {title:"KYC",href:"/kyc",icon:UserCheckIcon},
+  {title:"Services", href: "/services", icon: Calendar1},
+  {title:"commission", href: "/commission", icon: GitGraph},
+  {title:"contact Us", href: "/contact-us", icon: Users},
   { title: "Funds Request", href: "/funds-request", icon: CreditCard },
   { title: "Transaction History", href: "/transactions", icon: History },
-  // { title: "Wallet", href: "/wallet", icon: Wallet },
   {title: " Requested Funds", href: "/funds", icon: CreditCard},
   { title: "Payout Request", href: "/payout", icon: Receipt },
 

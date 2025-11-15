@@ -25,6 +25,7 @@ import RequestFunds from "./pages/fundRequest";
 import GetFundRequests from "./pages/requestedFund";
 import UserWalletTransactions from "./pages/transactionUsers";
 import PayoutRequest from "./pages/payout";
+import Settlement from "./pages/settlement";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/funds" element={<GetFundRequests />} />
               <Route path="/transactions" element={<UserWalletTransactions />} />
               <Route path="/payout" element={<PayoutRequest />} />
+              <Route path="/settlement" element={<Settlement />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

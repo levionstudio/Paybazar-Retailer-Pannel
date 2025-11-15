@@ -149,7 +149,7 @@ export default function Login() {
           description: "Redirecting to dashboard...",
         });
 
-        navigate("/funds-request");
+        navigate("/dashboard");
       } else {
         throw new Error(response.data.message || "Invalid OTP");
       }

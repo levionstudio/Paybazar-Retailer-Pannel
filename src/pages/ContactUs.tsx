@@ -81,7 +81,7 @@ const ContactUs = () => {
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Contact Information Card */}
               <Card className="h-fit">
-                <CardHeader className="bg-paybazaar-blue text-white rounded-t-lg">
+              <CardHeader className="paybazaar-gradient rounded-sm border-b border-border/40 text-white">        
                   <CardTitle className="flex items-center gap-2">
                     <Phone className="h-5 w-5" />
                     Get in Touch With Us Now!
@@ -167,7 +167,7 @@ const ContactUs = () => {
 
               {/* Support Form Card */}
               <Card>
-                <CardHeader className="bg-paybazaar-blue text-white rounded-t-lg">
+              <CardHeader className="paybazaar-gradient rounded-sm border-b border-border/40 text-white">
                   <CardTitle>Raise Ticket & Any Query</CardTitle>
                   <CardDescription className="text-slate-200">
                     Fill out the form below and we'll get back to you shortly

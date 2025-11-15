@@ -22,7 +22,7 @@ export default function AepsKyc() {
       <AppSidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
+        <Header walletBalance={0}/>
 
         <main className="flex-1 p-6 space-y-6 overflow-auto">
           {/* Header Section with Gradient */}
