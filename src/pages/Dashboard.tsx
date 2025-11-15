@@ -1,5 +1,4 @@
 import { Header } from "@/components/layout/Header";
-import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ServiceCard } from "@/components/dashboard/ServiceCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import {
@@ -16,6 +15,8 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { TransactionsTable } from "@/components/dashboard/TransactionTable";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+
 
 export default function Dashboard() {
   const services = [
@@ -68,40 +69,33 @@ export default function Dashboard() {
       description: "Transfer wallet balance to bank account",
       stats: [{ label: "Today", value: "₹0.00" }],
     },
-    {
-      title: "Wallet Management",
-      icon: Wallet,
-      status: "active" as const,
-      description: "Manage and track digital wallet balance",
-      stats: [{ label: "Balance", value: "₹25,000" }],
-    },
   ];
 
   const stats = [
-    {
-      title: "Total Revenue",
-      value: "₹2,45,680",
-      change: { type: "positive" as const },
-      icon: IndianRupee,
-    },
-    {
-      title: "Total Transactions",
-      value: "1,234",
-      change: { type: "positive" as const },
-      icon: Activity,
-    },
-    {
-      title: "Active Users",
-      value: "892",
-      change: { type: "positive" as const },
-      icon: Users,
-    },
-    {
-      title: "Commission Earned",
-      value: "₹12,340",
-      change: { type: "positive" as const },
-      icon: Wallet,
-    },
+    // {
+    //   title: "Total Revenue",
+    //   value: "₹2,45,680",
+    //   change: { type: "positive" as const },
+    //   icon: IndianRupee,
+    // },
+    // {
+    //   title: "Total Transactions",
+    //   value: "1,234",
+    //   change: { type: "positive" as const },
+    //   icon: Activity,
+    // },
+    // {
+    //   title: "Active Users",
+    //   value: "892",
+    //   change: { type: "positive" as const },
+    //   icon: Users,
+    // },
+    // {
+    //   title: "Commission Earned",
+    //   value: "₹12,340",
+    //   change: { type: "positive" as const },
+    //   icon: Wallet,
+    // },
   ];
 
   return (
@@ -114,9 +108,9 @@ export default function Dashboard() {
         <main className="flex-1 p-6 space-y-6 overflow-auto">
           {/* Welcome Section */}
           <div className="paybazaar-gradient rounded-lg p-6 text-white">
-            <h1 className="text-2xl font-bold mb-2">Welcome back, John!</h1>
+            <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>
             <p className="text-white/90">
-              Here's your business overview for today. You've processed ₹93,270
+              Here's your business overview for today. You've processed ₹0
               in transactions.
             </p>
           </div>

@@ -3,27 +3,19 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  CreditCard,
-  ArrowLeftRight,
-  Smartphone,
-  Receipt,
-  Shield,
-  History,
-  Wallet,
-  Settings,
-  Users,
-  BarChart3,
-  Activity,
-  PersonStanding,
-  Key,
-  User,
-  Icon,
-  UserCheckIcon,
   Home,
-  CalendarMinus,
-  Calendar1,
-  GitGraph,
+  User,
+  UserCheck,
+  ChevronDown,
+  ChevronRight,
+  Calendar,
+  History,
+  Receipt,
+  FileText,
+  Settings,
+  HelpCircle,
+  LogOut,
+  CreditCard,
 } from "lucide-react";
 
 import { jwtDecode } from "jwt-decode";
@@ -33,150 +25,303 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { title } from "process";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-// ✅ Retailer navigation items
-const retailerNavItems = [
-  { title: "Dashbaord", href: "/dashboard", icon: Home },
-  {title:"Profile", href: "/profile", icon: User},
-  {title:"KYC",href:"/kyc",icon:UserCheckIcon},
-  {title:"Services", href: "/services", icon: Calendar1},
-  {title:"commission", href: "/commission", icon: GitGraph},
-  {title:"contact Us", href: "/contact-us", icon: Users},
-  { title: "Funds Request", href: "/funds-request", icon: CreditCard },
-  { title: "Transaction History", href: "/transactions", icon: History },
-  {title: " Requested Funds", href: "/funds", icon: CreditCard},
-  { title: "Payout Request", href: "/payout", icon: Receipt },
-
+// -------------------------
+// Menu Data
+// -------------------------
+const mainMenu = [
+  { title: "Dashboard", href: "/dashboard", icon: Home },
+  { title: "Profile", href: "/profile", icon: User },
+  { title: "Services", href: "/services", icon: Calendar },
 ];
 
-// ✅ Admin navigation items
-const adminNavItems = [
-  { title: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Retailer Management", href: "/admin/retailers", icon: Users },
-  { title: "Transaction Monitor", href: "/admin/transactions", icon: BarChart3 },
-  { title: "Service Management", href: "/admin/services", icon: Settings },
-  { title: "Reports", href: "/admin/reports", icon: Receipt },
+const historyMenu = [
+  { title: "Account History", href: "/transactions", icon: History },
+  { title: "Service Report", href: "/service-report", icon: Receipt },
 ];
 
+const fundMenu = [
+  { title: "Add Fund", href: "/fund/add" },
+  { title: "Fund Requests", href: "/fund/requests" },
+];
+
+const bottomMenu = [
+  { title: "Commission", href: "/commission", icon: Receipt },
+  { title: "Documents", href: "/documents", icon: FileText },
+  { title: "Contact Us", href: "/contact-us", icon: HelpCircle },
+  { title: "Settings", href: "/settings", icon: Settings },
+];
+
+// -------------------------
+// Component
+// -------------------------
 export function AppSidebar() {
   const { state } = useSidebar();
+  const location = useLocation();
   const isCollapsed = state === "collapsed";
 
-  const [userRole, setUserRole] = useState<"retailer" | "admin">("retailer");
-  const [userName, setUserName] = useState<string>("User");
+  const [userName, setUserName] = useState("User");
+  const [userRole, setUserRole] = useState("retailer");
+  const [fundOpen, setFundOpen] = useState(false);
+
+  // Larger icons when collapsed, normal when expanded
+  const collapsedIconClass = isCollapsed ? "h-7 w-7 mx-auto" : "h-5 w-5";
 
   useEffect(() => {
-    // ✅ Load stored role
-    const storedRole = localStorage.getItem("userRole");
-    setUserRole(storedRole === "admin" ? "admin" : "retailer");
+    const role = localStorage.getItem("userRole");
+    setUserRole(role === "admin" ? "admin" : "retailer");
 
-    // ✅ Decode token for user_name
     const token = localStorage.getItem("authToken");
     if (!token) return;
 
     try {
       const decoded: any = jwtDecode(token);
-
-      if (decoded?.data?.user_name) {
-        setUserName(decoded.data.user_name);
-      }
-    } catch (err) {
-      console.error("Error decoding token:", err);
-    }
+      if (decoded?.data?.user_name) setUserName(decoded.data.user_name);
+    } catch {}
   }, []);
 
-  // ✅ Navigation selection based on role
-  const navItems = userRole === "admin" ? adminNavItems : retailerNavItems;
-
-  // ✅ Styling for active/inactive sidebar menu items
-  const getNavClassName = ({ isActive }: { isActive: boolean }) =>
-    `
-    flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-all
-    ${
-      isActive
-        ? "bg-accent text-accent-foreground shadow-sm"
-        : "hover:bg-accent hover:text-accent-foreground"
-    }
-  `;
-
-  // ✅ User initials in circle
-  const initials =
-    userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U";
+  const initials = userName?.length > 0 ? userName.charAt(0).toUpperCase() : "U";
+  const isFundActive = location.pathname.startsWith("/fund");
 
   return (
-    <Sidebar className="border-r border-sidebar-border" collapsible="icon">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+      <SidebarContent className="flex flex-col h-screen">
 
-        {/* ✅ Logo Section */}
-        <SidebarGroup>
-          <div className="flex h-16 items-center px-4 border-b border-sidebar-border">
-            <div className="flex items-center gap-3">
-              <img
-                src="/paybazaar-logo.png"
-                alt="PayBazaar"
-                className="h-8 w-8 shrink-0"
-              />
-              {!isCollapsed && (
-                <span className="text-lg font-semibold text-sidebar-foreground">
-                  PayBazaar
-                </span>
-              )}
+        {/* --------------------------------- */}
+        {/* LOGO SECTION */}
+        {/* --------------------------------- */}
+        <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-4">
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2">
+              <img src="/paybazaar-logo.png" alt="PayBazaar" className="h-8 w-auto" />
+              <span className="text-lg font-bold text-sidebar-foreground">PayBazaar</span>
             </div>
-          </div>
-        </SidebarGroup>
+          ) : (
+            <img src="/paybazaar-logo.png" alt="PayBazaar" className="h-10 w-auto mx-auto" />
+          )}
+        </div>
 
-        {/* ✅ Navigation items */}
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            {userRole === "admin" ? "Admin Panel" : "Services"}
-          </SidebarGroupLabel>
+        {/* --------------------------------- */}
+        {/* MENU SCROLL AREA */}
+        {/* --------------------------------- */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
 
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <NavLink to={item.href} className={getNavClassName} end>
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && <span>{item.title}</span>}
-                  </NavLink>
+          {/* ------------------ MAIN MENU ------------------ */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {mainMenu.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) =>
+                          `flex items-center py-2 rounded-lg transition-all ${
+                            isCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                          } ${
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <item.icon className={`${collapsedIconClass} shrink-0`} />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* ---------------------- KYC ---------------------- */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <button
+                    className={`flex w-full items-center py-2 rounded-lg transition-all text-sidebar-foreground hover:bg-sidebar-accent ${
+                      isCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                    }`}
+                  >
+                    <UserCheck className={`${collapsedIconClass} shrink-0`} />
+                    {!isCollapsed && (
+                      <div className="flex items-center justify-between w-full">
+                        <span>KYC</span>
+                        <span className="text-xs text-muted-foreground">Coming Soon</span>
+                      </div>
+                    )}
+                  </button>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        {/* ✅ User Info Section */}
+          {/* ------------------ HISTORY MENU ------------------ */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {historyMenu.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) =>
+                          `flex items-center py-2 rounded-lg transition-all ${
+                            isCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                          } ${
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <item.icon className={`${collapsedIconClass} shrink-0`} />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* ------------------ FUND COLLAPSIBLE ------------------ */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              {isCollapsed ? (
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to="/fund/add"
+                        className={({ isActive }) =>
+                          `flex items-center py-2 rounded-lg transition-all justify-center px-0 ${
+                            isActive || isFundActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <CreditCard className={`${collapsedIconClass} shrink-0`} />
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              ) : (
+                <Collapsible open={fundOpen} onOpenChange={setFundOpen}>
+                  <CollapsibleTrigger
+                    className={`flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all ${
+                      isFundActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CreditCard className={collapsedIconClass} />
+                      <span>Fund</span>
+                    </div>
+                    {fundOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="mt-1 space-y-1">
+                    {fundMenu.map((item) => (
+                      <NavLink
+                        key={item.href}
+                        to={item.href}
+                        className={({ isActive }) =>
+                          `flex items-center px-3 py-2 pl-11 rounded-lg text-sm transition-all ${
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-foreground font-medium"
+                              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50"
+                          }`
+                        }
+                      >
+                        {item.title}
+                      </NavLink>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* ------------------ BOTTOM MENU ------------------ */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {bottomMenu.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) =>
+                          `flex items-center py-2 rounded-lg transition-all ${
+                            isCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                          } ${
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <item.icon className={`${collapsedIconClass} shrink-0`} />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* ------------------ LOGOUT ------------------ */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("authToken");
+                      window.location.href = "/";
+                    }}
+                    className={`flex w-full items-center py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-all ${
+                      isCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                    }`}
+                  >
+                    <LogOut className={collapsedIconClass} />
+                    {!isCollapsed && <span>Logout</span>}
+                  </button>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
+
+        {/* ------------------ USER PROFILE ------------------ */}
         {!isCollapsed && (
-          <SidebarGroup className="mt-auto">
-            <div className="border-t border-sidebar-border p-4">
-              <div className="flex items-center gap-3">
-
-                {/* ✅ Initials avatar */}
-                <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center">
-                  <span className="text-sm font-medium text-sidebar-primary-foreground">
-                    {initials}
-                  </span>
-                </div>
-
-                {/* ✅ Name & Role */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-sidebar-foreground truncate">
-                    {userName}
-                  </p>
-                  <p className="text-xs text-sidebar-foreground/70 truncate">
-                    {userRole === "admin" ? "Administrator" : "Retailer"}
-                  </p>
-                </div>
-
+          <div className="border-t border-sidebar-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-bold text-lg">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-sidebar-foreground truncate">
+                  {userName}
+                </p>
+                <p className="text-xs text-sidebar-foreground/70 capitalize">
+                  {userRole}
+                </p>
               </div>
             </div>
-          </SidebarGroup>
+          </div>
         )}
 
       </SidebarContent>
