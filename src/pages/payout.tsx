@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
+import { X } from "lucide-react";
 
 interface TokenData {
   data: {
@@ -514,14 +515,39 @@ const PayoutRequest = () => {
                             <Label htmlFor={key}>
                               {key.replace(/_/g, " ").toUpperCase()}
                             </Label>
-                            <Input
-                              id={key}
-                              type={key === "amount" ? "number" : "text"}
-                              value={(formData as any)[key]}
-                              onChange={handleChange}
-                              required
-                              className="h-11"
-                            />
+                            {key === "mobile_number" ? (
+                              <div className="relative">
+                                <Input
+                                  id={key}
+                                  type="tel"
+                                  value={(formData as any)[key]}
+                                  onChange={handleChange}
+                                  required
+                                  className="h-11 pr-10"
+                                  placeholder="Enter mobile number"
+                                />
+                                {(formData as any)[key] && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFormData((prev) => ({ ...prev, [key]: "" }))
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <Input
+                                id={key}
+                                type={key === "amount" ? "number" : "text"}
+                                value={(formData as any)[key]}
+                                onChange={handleChange}
+                                required
+                                className="h-11"
+                              />
+                            )}
                           </div>
                         )
                     )}

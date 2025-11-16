@@ -5,6 +5,14 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface TokenData {
   data: {
@@ -27,11 +35,13 @@ interface GetFundRequestModel {
   requester_name: string;
   requester_type: string;
   amount: string;
-  bank_name: string;
-  account_number: string;
-  ifsc_code: string;
-  bank_branch: string;
+  bank_name?: string;
+  account_number?: string;
+  ifsc_code?: string;
+  bank_branch?: string;
   utr_number: string;
+  payment_mode?: string;
+  date?: string;
   remarks: string;
   request_status: string;
 }
@@ -157,46 +167,48 @@ const GetFundRequests = () => {
           {/* Table */}
           {!loading && fundRequests.length > 0 && (
             <div className="overflow-x-auto shadow-md rounded-xl border border-border">
-              <table className="min-w-full text-sm">
-                <thead className="bg-muted text-muted-foreground">
-                  <tr>
-                    <th className="p-3 text-left">Request ID</th>
-                    <th className="p-3 text-left">Name</th>
-                    <th className="p-3 text-left">Amount</th>
-                    <th className="p-3 text-left">Bank</th>
-                    <th className="p-3 text-left">UTR</th>
-                    <th className="p-3 text-left">Status</th>
-                  </tr>
-                </thead>
-
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold min-w-[150px]">Request ID</TableHead>
+                    <TableHead className="font-semibold min-w-[150px]">Name</TableHead>
+                    <TableHead className="font-semibold min-w-[120px]">Payment Mode</TableHead>
+                    <TableHead className="font-semibold min-w-[120px]">Amount</TableHead>
+                    <TableHead className="font-semibold min-w-[150px]">UTR Number</TableHead>
+                    <TableHead className="font-semibold min-w-[120px]">Date</TableHead>
+                    <TableHead className="font-semibold min-w-[200px]">Remarks</TableHead>
+                    <TableHead className="font-semibold min-w-[120px]">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {fundRequests.map((req) => (
-                    <tr key={req.request_id} className="border-b hover:bg-muted/50">
-                      <td className="p-3">{req.request_unique_id}</td>
-                      <td className="p-3">{req.requester_name}</td>
-                      <td className="p-3">₹{req.amount}</td>
-                      <td className="p-3">
-                        {req.bank_name} <br />
-                        <span className="text-xs text-muted-foreground">
-                          {req.account_number} / {req.ifsc_code}
+                    <TableRow key={req.request_id} className="hover:bg-muted/50">
+                      <TableCell>{req.request_unique_id || req.request_id}</TableCell>
+                      <TableCell>{req.requester_name}</TableCell>
+                      <TableCell>{(req as any).payment_mode || "N/A"}</TableCell>
+                      <TableCell className="font-medium">₹{req.amount}</TableCell>
+                      <TableCell>{req.utr_number || "N/A"}</TableCell>
+                      <TableCell>{(req as any).date || "N/A"}</TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={req.remarks}>
+                        {req.remarks || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            req.request_status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : req.request_status === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {req.request_status.toUpperCase()}
                         </span>
-                      </td>
-                      <td className="p-3">{req.utr_number}</td>
-                      <td
-                        className={`p-3 font-medium ${
-                          req.request_status === "approved"
-                            ? "text-green-600"
-                            : req.request_status === "rejected"
-                            ? "text-red-600"
-                            : "text-yellow-600"
-                        }`}
-                      >
-                        {req.request_status.toUpperCase()}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   Card,
@@ -29,25 +36,51 @@ interface TokenData {
   exp: number;
 }
 
-const STATIC_BANK_DETAILS = {
-  bank_name: "Axis Bank",
-  account_number: "925020043148912",
-  ifsc_code: "UTIB0000056",
-};
 
 const RequestFunds = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    amount: "",
     bank_name: "",
     account_number: "",
     ifsc_code: "",
     bank_branch: "",
     utr_number: "",
+    amount: "",
     remarks: "",
   });
+
+  // Bank to IFSC mapping
+  const bankToIFSC: Record<string, string> = {
+    "State Bank of India": "SBIN",
+    "HDFC Bank": "HDFC",
+    "ICICI Bank": "ICIC",
+    "Punjab National Bank": "PUNB",
+    "Bank of Baroda": "BARB",
+    "Canara Bank": "CNRB",
+    "Union Bank of India": "UBIN",
+    "Axis Bank": "UTIB",
+    "Kotak Mahindra Bank": "KKBK",
+    "IndusInd Bank": "INDB",
+    "IDFC FIRST Bank": "IDFB",
+    "IDFC Bank Limited": "IDFB",
+  };
+
+  const banks = [
+    "State Bank of India",
+    "HDFC Bank",
+    "ICICI Bank",
+    "Punjab National Bank",
+    "Bank of Baroda",
+    "Canara Bank",
+    "Union Bank of India",
+    "Axis Bank",
+    "Kotak Mahindra Bank",
+    "IndusInd Bank",
+    "IDFC FIRST Bank",
+    "IDFC Bank Limited",
+  ];
 
   const [loading, setLoading] = useState(false);
   const [walletBalance] = useState(50000);
@@ -106,6 +139,47 @@ const RequestFunds = () => {
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleBankChange = (bankName: string) => {
+    const ifscPrefix = bankToIFSC[bankName] || "";
+    setFormData((prev) => ({
+      ...prev,
+      bank_name: bankName,
+      ifsc_code: ifscPrefix, // Auto-fill IFSC prefix when bank is selected
+    }));
+  };
+
+  const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    
+    // If bank is selected, ensure IFSC starts with bank's prefix
+    if (formData.bank_name && bankToIFSC[formData.bank_name]) {
+      const prefix = bankToIFSC[formData.bank_name];
+      
+      // If user is typing and value doesn't start with prefix, prepend it
+      if (value.length > 0 && !value.startsWith(prefix)) {
+        // If user deleted prefix, restore it
+        if (value.length < prefix.length) {
+          value = prefix;
+        } else {
+          // Keep prefix and append remaining characters
+          value = prefix + value.substring(prefix.length);
+        }
+      }
+      
+      // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
+      if (value.length > 11) {
+        value = value.substring(0, 11);
+      }
+    } else {
+      // No bank selected, just limit to 11 characters
+      if (value.length > 11) {
+        value = value.substring(0, 11);
+      }
+    }
+    
+    setFormData((prev) => ({ ...prev, ifsc_code: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,118 +258,175 @@ const RequestFunds = () => {
       >
         <Header walletBalance={walletBalance} />
         <div className="flex-1 overflow-y-auto">
-          <main className="p-6 flex flex-col items-center space-y-8 ">
-            {/* Static Bank Details Card */}
-             <Card className="shadow-md border border-border rounded-xl overflow-hidden animate-fade-in ">
-                <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-xl">
-                  <CardTitle className="text-2xl font-semibold">
-                  Our Bank Details
-                </CardTitle>
-                <CardDescription className="text-white/80 mt-1">
-                  Please use these details for reference.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 bg-card grid grid-cols-3 gap-6 text-center text-sm font-medium text-gray-400">
-                <div>
-                  <p className="text-black">Bank Name</p>
-                  <p>{STATIC_BANK_DETAILS.bank_name}</p>
-                </div>
-                <div>
-                  <p className="text-black">Account Number</p>
-                  <p>{STATIC_BANK_DETAILS.account_number}</p>
-                </div>
-                <div>
-                  <p className="text-black">IFSC Code</p>
-                  <p>{STATIC_BANK_DETAILS.ifsc_code}</p>
-                </div>
-                  <div>
-                  <p className="text-black">Bank Name</p>
-                  <p>IDFC FIRST Bank</p>
-                </div>
-                <div>
-                  <p className="text-black">Account Number</p>
-                  <p>10248252306</p>
-                </div>
-
-                  <div>
-                  <p className="text-black">IFSC Code</p>
-                  <p>IDFB0020137</p>
-                </div>
-
-              </CardContent>
-            </Card>
-
+          <main className="p-6 flex flex-col items-center">
             {/* Fund Request Form */}
-            <div className="flex flex-col max-w-2xl w-full">
-              <Card className="shadow-md border border-border rounded-xl overflow-hidden animate-fade-in">
-                <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-xl">
-                  <CardTitle className="text-2xl font-semibold">
-                    Fund Request Form
-                  </CardTitle>
-                  <CardDescription className="text-primary-foreground/80 mt-1">
-                    Fill in the details to request funds.
-                  </CardDescription>
+            <div className="flex flex-col max-w-3xl w-full">
+              <Card className="shadow-lg border border-border rounded-xl overflow-hidden animate-fade-in">
+                <CardHeader className="paybazaar-gradient text-white rounded-t-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-1 bg-white/30 rounded-full"></div>
+                    <div>
+                      <CardTitle className="text-2xl font-bold">
+                        Request E-Value
+                      </CardTitle>
+                      <CardDescription className="text-white/90 mt-1">
+                        Submit your fund request with transaction details
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="p-8 bg-card">
+                <CardContent className="p-8 bg-gradient-to-br from-background to-muted/30">
                   <form
                     onSubmit={handleSubmit}
                     className="space-y-6"
                     aria-label="Fund request form"
                   >
-                    <div className="grid grid-cols-2 gap-5">
-                      {Object.entries(formData).map(([key, value]) =>
-                        key !== "remarks" ? (
-                          <div className="space-y-2" key={key}>
-                            <Label htmlFor={key} className="font-medium">
-                              {formatLabel(key)}
-                            </Label>
-                            <Input
-                              id={key}
-                              type={key === "amount" ? "number" : "text"}
-                              value={value}
-                              onChange={handleChange}
-                              className="h-11"
-                              required
-                              aria-required="true"
-                            />
-                          </div>
-                        ) : null
-                      )}
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Bank Name */}
+                      <div className="space-y-2">
+                        <Label htmlFor="bank_name" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          Select Bank <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.bank_name}
+                          onValueChange={handleBankChange}
+                          required
+                        >
+                          <SelectTrigger className="h-12 border-2 border-border focus:border-primary transition-colors bg-background hover:bg-muted/50">
+                            <SelectValue placeholder="--Select Bank--" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {banks.map((bank) => (
+                              <SelectItem key={bank} value={bank}>
+                                {bank}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* IFSC Code */}
+                      <div className="space-y-2">
+                        <Label htmlFor="ifsc_code" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          IFSC Code <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="ifsc_code"
+                          type="text"
+                          value={formData.ifsc_code}
+                          onChange={handleIFSCChange}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
+                          placeholder="Enter IFSC Code"
+                          maxLength={11}
+                          required
+                          aria-required="true"
+                        />
+                      </div>
+
+                      {/* Account Number */}
+                      <div className="space-y-2">
+                        <Label htmlFor="account_number" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          Account Number <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="account_number"
+                          type="text"
+                          value={formData.account_number}
+                          onChange={handleChange}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
+                          placeholder="Enter Account Number"
+                          required
+                          aria-required="true"
+                        />
+                      </div>
+
+                      {/* Bank Branch */}
+                      <div className="space-y-2">
+                        <Label htmlFor="bank_branch" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          Bank Branch <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="bank_branch"
+                          type="text"
+                          value={formData.bank_branch}
+                          onChange={handleChange}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
+                          placeholder="Enter Bank Branch"
+                          required
+                          aria-required="true"
+                        />
+                      </div>
+
+                      {/* UTR Number */}
+                      <div className="space-y-2">
+                        <Label htmlFor="utr_number" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          UTR Number <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="utr_number"
+                          type="text"
+                          value={formData.utr_number}
+                          onChange={handleChange}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
+                          placeholder="Enter UTR Number"
+                          required
+                          aria-required="true"
+                        />
+                      </div>
+
+                      {/* Amount */}
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                          Amount <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={formData.amount}
+                          onChange={handleChange}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
+                          placeholder="Enter Amount"
+                          min="0"
+                          step="0.01"
+                          required
+                          aria-required="true"
+                        />
+                      </div>
                     </div>
 
+                    {/* Remarks */}
                     <div className="space-y-2">
-                      <Label htmlFor="remarks" className="font-medium">
-                        Remarks
+                      <Label htmlFor="remarks" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                        Remarks <span className="text-destructive">*</span>
                       </Label>
                       <Textarea
                         id="remarks"
                         value={formData.remarks}
                         onChange={handleChange}
-                        className="h-32"
+                        className="min-h-[120px] border-2 border-border focus:border-primary transition-colors bg-background resize-none"
+                        placeholder="Enter any additional notes or remarks"
                         required
                         aria-required="true"
                       />
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-4 pt-6">
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 h-12 border-2 hover:bg-muted"
                         disabled={loading}
-                        onClick={() =>
-                          navigate(role === "master" ? "/master" : "/user")
-                        }
+                        onClick={() => navigate("/dashboard")}
                       >
                         Cancel
                       </Button>
 
                       <Button
                         type="submit"
-                        className="flex-1 gradient-primary hover:opacity-90"
+                        className="flex-1 h-12 paybazaar-gradient text-white hover:opacity-90 shadow-lg font-semibold"
                         disabled={loading}
                       >
-                        {loading ? "Submitting..." : "Submit Request"}
+                        {loading ? "Submitting..." : "Submit"}
                       </Button>
                     </div>
                   </form>

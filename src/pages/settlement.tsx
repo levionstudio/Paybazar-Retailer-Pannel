@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Eye, CheckCircle2, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AddBeneficiaryDialog } from "@/components/dialogs/AddBeneficiaryDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -236,38 +236,54 @@ export default function Settlement() {
         <div className="flex-1 flex flex-col min-w-0">
           <Header walletBalance={0} />
           <div className="flex-1 flex items-center justify-center p-6">
-            <Dialog open={showLoginDialog} onOpenChange={() => {}}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-semibold">
-                    Payout User Login
-                  </DialogTitle>
-                  <DialogDescription>
-                    Please enter your credentials to access payout services
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+            <div className="w-full max-w-md">
+              <div className="paybazaar-gradient rounded-lg p-6 text-white mb-6">
+                <h1 className="text-2xl font-bold">Remitter Login</h1>
+                <p className="text-white/90 mt-1">Enter your phone number to access payout services</p>
+              </div>
+              <div className="bg-card rounded-lg border border-border shadow-lg p-8">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLogin();
+                  }}
+                  className="space-y-6"
+                >
                   <div className="space-y-2">
-                    <Label htmlFor="password">Phone Number (Without +91)</Label>
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                   
-                      onChange={(e) => setPayoutPhoneNumber(e.target.value)}
-                      placeholder="Enter Phone Number"
-                    />
+                    <Label htmlFor="phoneNumber" className="text-sm font-medium text-foreground">
+                      Mobile Number <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        value={payoutPhoneNumber}
+                        onChange={(e) => setPayoutPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        placeholder="Enter Mobile Number"
+                        className="h-12 border-2 border-border focus:border-primary transition-colors pr-10"
+                        maxLength={10}
+                        required
+                      />
+                      {payoutPhoneNumber && (
+                        <button
+                          type="button"
+                          onClick={() => setPayoutPhoneNumber("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <DialogFooter>
                   <Button
-                    onClick={handleLogin}
-                    className="w-full paybazaar-gradient text-white"
+                    type="submit"
+                    className="w-full h-12 paybazaar-gradient text-white hover:opacity-90 shadow-lg font-semibold"
                   >
-                    Login
+                    Submit
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -306,14 +322,14 @@ export default function Settlement() {
 
           {/* Table Section */}
           <div className="p-6">
-            <div className="bg-card rounded-lg border border-border shadow-sm">
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Show</span>
+            <div className="bg-card rounded-lg border border-border shadow-lg overflow-hidden">
+              <div className="paybazaar-gradient p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white font-medium">Show</span>
                     <Select defaultValue="10">
-                      <SelectTrigger className="w-20 h-8">
-                        <SelectValue />
+                      <SelectTrigger className="w-20 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20">
+                        <SelectValue className="text-white" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="10">10</SelectItem>
@@ -321,82 +337,107 @@ export default function Settlement() {
                         <SelectItem value="50">50</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-sm text-muted-foreground">entries</span>
+                    <span className="text-sm text-white font-medium">entries</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Search:</span>
-                    <Input className="w-48 h-8" placeholder="Search..." />
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white font-medium">Search:</span>
+                    <Input 
+                      className="w-56 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20" 
+                      placeholder="Search..." 
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold text-center">BENEFICIARY NAME</TableHead>
-                      <TableHead className="font-semibold text-center">BANK NAME</TableHead>
-                      <TableHead className="font-semibold text-center">IFSC</TableHead>
-                      <TableHead className="font-semibold text-center">ACCOUNT NUMBER</TableHead>
-                      <TableHead className="font-semibold text-center">MOBILE NUMBER</TableHead>
-                      <TableHead className="font-semibold text-center">PAY</TableHead>
-                      <TableHead className="font-semibold text-center">VERIFY</TableHead>
-                      <TableHead className="font-semibold text-center">DELETE</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {beneficiaries.map((beneficiary) => (
-                      <TableRow key={beneficiary.id}>
-                        <TableCell className="text-center">{beneficiary.beneficiaryName}</TableCell>
-                        <TableCell className="text-center">{beneficiary.bankName}</TableCell>
-                        <TableCell className="text-center">{beneficiary.ifsc}</TableCell>
-                        <TableCell className="text-center">{beneficiary.accountNumber}</TableCell>
-                        <TableCell className="text-center">{beneficiary.mobileNumber}</TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            onClick={() => handlePayClick(beneficiary)}
-                            className="bg-foreground text-background hover:bg-foreground/90"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Pay
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {beneficiary.isVerified ? (
-                            <Button
-                              size="sm"
-                              disabled
-                              className="bg-green-600 text-white cursor-not-allowed"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Verified
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handleVerify(beneficiary.id)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Verify
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(beneficiary.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </TableCell>
+                <div className="w-full min-w-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="paybazaar-gradient hover:opacity-95">
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">BENEFICIARY NAME</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">BANK NAME</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[140px] min-w-[140px]">IFSC</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">ACCOUNT NUMBER</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[150px] min-w-[150px]">MOBILE NUMBER</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">PAY</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[130px] min-w-[130px]">VERIFY</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">DELETE</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {beneficiaries.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
+                                <Eye className="h-10 w-10 text-muted-foreground" />
+                              </div>
+                              <p className="text-lg font-semibold text-foreground mb-2">No beneficiaries found</p>
+                              <p className="text-sm text-muted-foreground">Click "+ Add Bene" to add a new beneficiary</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        beneficiaries.map((beneficiary, index) => (
+                          <TableRow 
+                            key={beneficiary.id}
+                            className={`hover:bg-muted/50 transition-colors ${
+                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                            }`}
+                          >
+                            <TableCell className="text-center font-medium py-4">{beneficiary.beneficiaryName}</TableCell>
+                            <TableCell className="text-center py-4">{beneficiary.bankName}</TableCell>
+                            <TableCell className="text-center py-4 font-mono text-sm">{beneficiary.ifsc}</TableCell>
+                            <TableCell className="text-center py-4 font-mono text-sm">{beneficiary.accountNumber}</TableCell>
+                            <TableCell className="text-center py-4 font-mono">{beneficiary.mobileNumber}</TableCell>
+                            <TableCell className="text-center py-4">
+                              <Button
+                                size="sm"
+                                onClick={() => handlePayClick(beneficiary)}
+                                className="paybazaar-gradient text-white hover:opacity-90 shadow-md"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Pay
+                              </Button>
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              {beneficiary.isVerified ? (
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-green-600 text-white cursor-not-allowed opacity-75"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Verified
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleVerify(beneficiary.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Verify
+                                </Button>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(beneficiary.id)}
+                                className="shadow-md"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           </div>
