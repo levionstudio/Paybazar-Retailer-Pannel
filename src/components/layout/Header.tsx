@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 interface HeaderProps {
-  walletBalance: number;
+  walletBalance?: number;
 }
 
 interface JWTPayload {

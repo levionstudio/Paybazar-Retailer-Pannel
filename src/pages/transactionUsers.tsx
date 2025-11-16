@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -14,10 +11,11 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface TokenData {
   data: {
@@ -31,12 +29,26 @@ interface TokenData {
   exp: number;
 }
 
+interface Transaction {
+  transaction_id: string;
+  transactor_name: string;
+  transactor_type: string;
+  receiver_name: string;
+  receiver_type: string;
+  transaction_type: string;
+  amount: string;
+  transaction_status: string;
+  remarks: string;
+}
+
 const UserWalletTransactions = () => {
   const { toast } = useToast();
 
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // ✅ Decode token
   useEffect(() => {
@@ -78,41 +90,88 @@ const UserWalletTransactions = () => {
   }, []);
 
   // ✅ Fetch wallet transactions
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!tokenData) return;
+  const fetchTransactions = async () => {
+    if (!tokenData) return;
 
-      const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken");
+    setLoading(true);
 
-      try {
-        const res = await axios.get(
-          `https://server.paybazaar.in/user/wallet/get/transactions/${tokenData.data.user_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (res.data.status === "success") {
-          setTransactions(res.data.data || []);
-        } else {
-          setTransactions([]);
+    try {
+      const res = await axios.get(
+        `https://server.paybazaar.in/user/wallet/get/transactions/${tokenData.data.user_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Error fetching wallet transactions:", error);
-        toast({
-          title: "Error",
-          description: "Unable to fetch transactions",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
-    fetchTransactions();
+      if (res.data.status === "success") {
+        setTransactions(res.data.data || []);
+        toast({
+          title: "Success",
+          description: "Transactions loaded successfully",
+        });
+      } else {
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching wallet transactions:", error);
+      toast({
+        title: "Error",
+        description: "Unable to fetch transactions",
+        variant: "destructive",
+      });
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tokenData) fetchTransactions();
   }, [tokenData]);
+
+  const getTransactionTypeBadge = (type: string) => {
+    return type === "DEBIT" ? (
+      <Badge
+        variant="outline"
+        className="bg-red-50 text-red-700 border-red-300"
+      >
+        Debit
+      </Badge>
+    ) : (
+      <Badge
+        variant="outline"
+        className="bg-green-50 text-green-700 border-green-300"
+      >
+        Credit
+      </Badge>
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    return status === "SUCCESS" ? (
+      <Badge
+        variant="outline"
+        className="bg-green-50 text-green-700 border-green-300"
+      >
+        Success
+      </Badge>
+    ) : (
+      <Badge
+        variant="outline"
+        className="bg-yellow-50 text-yellow-700 border-yellow-300"
+      >
+        Pending
+      </Badge>
+    );
+  };
+
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTransactions = transactions.slice(startIndex, endIndex);
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -121,93 +180,163 @@ const UserWalletTransactions = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
 
-        <div className="max-w-6xl mx-auto w-full mt-6">
-          <Card className="shadow-lg border rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">
-                Wallet Transactions
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent>
-              {loading ? (
-                <p className="text-center text-lg text-muted-foreground">Loading...</p>
-              ) : transactions.length === 0 ? (
-                <p className="text-center text-lg text-muted-foreground">
-                  No transactions found
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Wallet Transactions
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  View your wallet transaction history
                 </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Transactor</TableHead>
-                        <TableHead>Receiver</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Remarks</TableHead>
-                      </TableRow>
-                    </TableHeader>
+              </div>
+              <Button onClick={fetchTransactions} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
 
-                    <TableBody>
-                      {transactions.map((tx: any) => (
-                        <TableRow key={tx.transaction_id}>
+            <Card>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div>
+                    <div className="max-h-[600px]  overflow-y-auto ">
+                      <Table className="w-full">
+                        <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Transactor
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Receiver
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Type
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Amount
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Status
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Remarks
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedTransactions.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={6}
+                                className="text-center text-muted-foreground py-8"
+                              >
+                                No transactions found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedTransactions.map((tx) => (
+                              <TableRow key={tx.transaction_id}>
+                                <TableCell className="text-center">
+                                  <div>
+                                    <span className="font-medium">
+                                      {tx.transactor_name}
+                                    </span>
+                                    <div className="text-xs text-muted-foreground">
+                                      {tx.transactor_type}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div>
+                                    <span className="font-medium">
+                                      {tx.receiver_name}
+                                    </span>
+                                    <div className="text-xs text-muted-foreground">
+                                      {tx.receiver_type}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {getTransactionTypeBadge(tx.transaction_type)}
+                                </TableCell>
+                                <TableCell className="font-semibold text-center whitespace-nowrap">
+                                  ₹
+                                  {parseFloat(tx.amount).toLocaleString(
+                                    "en-IN"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {getStatusBadge(tx.transaction_status)}
+                                </TableCell>
+                                <TableCell className="text-center max-w-xs truncate">
+                                  {tx.remarks || "N/A"}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
 
-
-                          <TableCell>
-                            <span className="font-medium">{tx.transactor_name}</span>
-                            <div className="text-xs text-muted-foreground">
-                              {tx.transactor_type}
-                            </div>
-                          </TableCell>
-
-                          <TableCell>
-                            <span className="font-medium">{tx.receiver_name}</span>
-                            <div className="text-xs text-muted-foreground">
-                              {tx.receiver_type}
-                            </div>
-                          </TableCell>
-
-                          <TableCell>
-                            <span
-                              className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                                tx.transaction_type === "DEBIT"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              {tx.transaction_type}
-                            </span>
-                          </TableCell>
-
-                          <TableCell className="font-bold">
-                            ₹{tx.amount}
-                          </TableCell>
-
-                          <TableCell>
-                            <span
-                              className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                                tx.transaction_status === "SUCCESS"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                              }`}
-                            >
-                              {tx.transaction_status}
-                            </span>
-                          </TableCell>
-
-                          <TableCell className="max-w-xs truncate">
-                            {tx.remarks}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              {transactions.length > 0 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to{" "}
+                    {Math.min(endIndex, transactions.length)} of{" "}
+                    {transactions.length} transactions
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <Button
+                            key={page}
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-10"
+                          >
+                            {page}
+                          </Button>
+                        )
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

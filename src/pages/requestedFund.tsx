@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface TokenData {
   data: {
@@ -54,6 +58,8 @@ const GetFundRequests = () => {
   const [loading, setLoading] = useState(true);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const redirectTo = useCallback(
     (path: string) => navigate(path, { replace: true }),
@@ -96,132 +102,269 @@ const GetFundRequests = () => {
   }, [toast, redirectTo]);
 
   // --- FETCH DATA ---
-  useEffect(() => {
-    const fetchRequests = async () => {
-      if (!tokenData) return;
+  const fetchRequests = async () => {
+    if (!tokenData) return;
 
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
 
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/user/get/fund/request/${tokenData.data.user_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (Array.isArray(data.data)) {
-          setFundRequests(data.data);
-        } else {
-          setFundRequests([]);
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/user/get/fund/request/${
+          tokenData.data.user_id
+        }`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      } catch (err: any) {
-        console.error("Fetch request error:", err);
-        toast({
-          title: "Error",
-          description: err.response?.data?.message || "Failed to fetch fund requests.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
+      if (Array.isArray(data.data)) {
+        setFundRequests(data.data);
+      } else {
+        setFundRequests([]);
+      }
+
+      toast({
+        title: "Success",
+        description: "Fund requests loaded successfully",
+      });
+    } catch (err: any) {
+      console.error("Fetch request error:", err);
+      toast({
+        title: "Error",
+        description:
+          err.response?.data?.message || "Failed to fetch fund requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (tokenData) fetchRequests();
-  }, [tokenData, toast]);
+  }, [tokenData]);
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case "PENDING":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-300"
+          >
+            Pending
+          </Badge>
+        );
+      case "APPROVED":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-300"
+          >
+            Approved
+          </Badge>
+        );
+      case "REJECTED":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-300"
+          >
+            Rejected
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const totalPages = Math.ceil(fundRequests.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRequests = fundRequests.slice(startIndex, endIndex);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-lg text-muted-foreground">
+              Checking authentication...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen w-full bg-background relative">
+    <div className="flex min-h-screen w-full bg-background">
       <AppSidebar />
 
-      <div
-        className="flex-1 flex flex-col min-w-0 transition-opacity duration-500"
-        style={{ opacity: isCheckingAuth ? 0.3 : 1 }}
-        aria-busy={isCheckingAuth}
-      >
+      <div className="flex-1 flex flex-col min-w-0">
         <Header walletBalance={10} />
 
         <div className="flex-1 p-6 overflow-y-auto">
-          <h2 className="text-3xl font-semibold mb-6">My Fund Requests</h2>
-
-          {/* Loading state */}
-          {loading && (
-            <div className="text-center text-lg text-muted-foreground py-20">
-              Loading fund requests...
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  My Fund Requests
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  View your fund request history
+                </p>
+              </div>
+              <Button onClick={fetchRequests} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
             </div>
-          )}
 
-          {/* No data */}
-          {!loading && fundRequests.length === 0 && (
-            <div className="text-center text-lg text-muted-foreground py-20">
-              No fund requests found.
-            </div>
-          )}
+            <Card>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div>
+                    <div className="max-h-[600px]  overflow-y-auto pl-10">
+                      <Table className="w-full">
+                        <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Request ID
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Name
+                            </TableHead>
 
-          {/* Table */}
-          {!loading && fundRequests.length > 0 && (
-            <div className="overflow-x-auto shadow-md rounded-xl border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold min-w-[150px]">Request ID</TableHead>
-                    <TableHead className="font-semibold min-w-[150px]">Name</TableHead>
-                    <TableHead className="font-semibold min-w-[120px]">Payment Mode</TableHead>
-                    <TableHead className="font-semibold min-w-[120px]">Amount</TableHead>
-                    <TableHead className="font-semibold min-w-[150px]">UTR Number</TableHead>
-                    <TableHead className="font-semibold min-w-[120px]">Date</TableHead>
-                    <TableHead className="font-semibold min-w-[200px]">Remarks</TableHead>
-                    <TableHead className="font-semibold min-w-[120px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fundRequests.map((req) => (
-                    <TableRow key={req.request_id} className="hover:bg-muted/50">
-                      <TableCell>{req.request_unique_id || req.request_id}</TableCell>
-                      <TableCell>{req.requester_name}</TableCell>
-                      <TableCell>{(req as any).payment_mode || "N/A"}</TableCell>
-                      <TableCell className="font-medium">₹{req.amount}</TableCell>
-                      <TableCell>{req.utr_number || "N/A"}</TableCell>
-                      <TableCell>{(req as any).date || "N/A"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={req.remarks}>
-                        {req.remarks || "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            req.request_status === "approved"
-                              ? "bg-green-100 text-green-700"
-                              : req.request_status === "rejected"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {req.request_status.toUpperCase()}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                            <TableHead className="text-center whitespace-nowrap">
+                              Amount
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              UTR Number
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Date
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Remarks
+                            </TableHead>
+                            <TableHead className="text-center whitespace-nowrap">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedRequests.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={8}
+                                className="text-center text-muted-foreground py-8"
+                              >
+                                No fund requests found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedRequests.map((req) => (
+                              <TableRow key={req.request_id}>
+                                <TableCell className="text-center whitespace-nowrap">
+                                  {req.request_unique_id || req.request_id}
+                                </TableCell>
+                                <TableCell className="font-medium text-center whitespace-nowrap">
+                                  {req.requester_name}
+                                </TableCell>
+
+                                <TableCell className="font-semibold text-center whitespace-nowrap">
+                                  ₹
+                                  {parseFloat(req.amount).toLocaleString(
+                                    "en-IN"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                  {req.utr_number || "N/A"}
+                                </TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                  {(req as any).date || "N/A"}
+                                </TableCell>
+                                <TableCell className="text-center max-w-xs truncate">
+                                  {req.remarks || "N/A"}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {getStatusBadge(req.request_status)}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+
+              {fundRequests.length > 0 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to{" "}
+                    {Math.min(endIndex, fundRequests.length)} of{" "}
+                    {fundRequests.length} requests
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <Button
+                            key={page}
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-10"
+                          >
+                            {page}
+                          </Button>
+                        )
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
-
-      {/* Auth check overlay */}
-      {isCheckingAuth && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm animate-fade-in">
-          <span className="animate-pulse text-lg text-muted-foreground">
-            Checking authentication...
-          </span>
-        </div>
-      )}
     </div>
   );
 };
