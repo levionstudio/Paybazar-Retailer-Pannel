@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { AddBeneficiaryDialog } from "@/components/dialogs/AddBeneficiaryDialog";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 interface Beneficiary {
   beneficiary_id: string;
@@ -42,6 +43,18 @@ interface Beneficiary {
   mobileNumber: string;
   beneficiary_phone: string;
   isVerified: boolean;
+}
+
+interface TokenData {
+  data: {
+    admin_id: string;
+    user_id?: string;
+    distributor_id?: string;
+    user_unique_id?: string;
+    user_name?: string;
+    is_mpin_set?: boolean | number | string;
+  };
+  exp: number;
 }
 
 
@@ -58,11 +71,22 @@ export default function Settlement() {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingBeneficiaries, setFetchingBeneficiaries] = useState(false);
+  const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  
+  // MPIN related states
+  const [isMpinSet, setIsMpinSet] = useState(false);
+  const [showMpinDialog, setShowMpinDialog] = useState(false);
+  const [mpin, setMpin] = useState("");
+  const [confirmMpin, setConfirmMpin] = useState("");
+  const [mpinError, setMpinError] = useState<string | null>(null);
+  const [isSavingMpin, setIsSavingMpin] = useState(false);
+  const [showMpinVerificationDialog, setShowMpinVerificationDialog] = useState(false);
+  const [verifiedMpin, setVerifiedMpin] = useState("");
+  const [mpinVerificationError, setMpinVerificationError] = useState<string | null>(null);
 
   const [payFormData, setPayFormData] = useState({
     transactionType: "",
     amount: "",
-    mpin: "",
   });
 
   const fetchBeneficiaries = async (phoneNumber: string) => {
@@ -110,6 +134,30 @@ export default function Settlement() {
     }
   };
 
+  // Check MPIN status on component mount
+  useEffect(() => {
+    const checkMpinStatus = () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      try {
+        const decoded: TokenData = jwtDecode(token);
+        setTokenData(decoded);
+        const mpinFlag = decoded?.data?.is_mpin_set;
+        const hasMpin =
+          mpinFlag === true ||
+          mpinFlag === 1 ||
+          mpinFlag === "1" ||
+          mpinFlag === "true";
+        setIsMpinSet(Boolean(hasMpin));
+      } catch (error) {
+        console.error("Error checking MPIN status:", error);
+      }
+    };
+
+    checkMpinStatus();
+  }, []);
+
   const handleLogin = async () => {
     if (!payoutPhoneNumber) {
       toast({
@@ -123,6 +171,29 @@ export default function Settlement() {
     try {
       setIsAuthenticated(true);
       setShowLoginDialog(false);
+      
+      // Check MPIN status after login
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        try {
+          const decoded: TokenData = jwtDecode(token);
+          setTokenData(decoded);
+          const mpinFlag = decoded?.data?.is_mpin_set;
+          const hasMpin =
+            mpinFlag === true ||
+            mpinFlag === 1 ||
+            mpinFlag === "1" ||
+            mpinFlag === "true";
+          setIsMpinSet(Boolean(hasMpin));
+          
+          // Show MPIN setup dialog if MPIN is not set
+          if (!hasMpin) {
+            setShowMpinDialog(true);
+          }
+        } catch (error) {
+          console.error("Error checking MPIN status:", error);
+        }
+      }
       
       // Fetch beneficiaries after login
       await fetchBeneficiaries(payoutPhoneNumber);
@@ -196,28 +267,185 @@ export default function Settlement() {
   };
 
   const handlePayClick = (beneficiary: Beneficiary) => {
+    // Check if MPIN is set before allowing payment
+    if (!isMpinSet) {
+      toast({
+        title: "MPIN Setup Required",
+        description: "Please set your MPIN first to proceed with payout.",
+        variant: "destructive",
+      });
+      setShowMpinDialog(true);
+      return;
+    }
+    
     setSelectedBeneficiary(beneficiary);
     setPayFormData({
       transactionType: "",
       amount: "",
-      mpin: "",
     });
     setShowPayDialog(true);
+  };
+
+  // MPIN Setup Handler
+  const handleMpinInput = (value: string, setter: (val: string) => void) => {
+    if (/^\d{0,4}$/.test(value)) {
+      setter(value);
+      setMpinError(null);
+    }
+  };
+
+  const handleMpinSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (mpin.length !== 4) {
+      setMpinError("MPIN must be exactly 4 digits.");
+      return;
+    }
+
+    if (mpin !== confirmMpin) {
+      setMpinError("MPIN and confirm MPIN must match.");
+      return;
+    }
+
+    if (!tokenData?.data?.user_id) {
+      setMpinError("User information not available. Please try again.");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      toast({
+        title: "Error",
+        description: "Please log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const setupPayload = { 
+      user_id: tokenData.data.user_id,
+      mpin: mpin 
+    };
+
+    try {
+      setIsSavingMpin(true);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/user/set/mpin`,
+        setupPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Check if API returns a new token in response
+      if (response.data.data?.token) {
+        localStorage.setItem("authToken", response.data.data.token);
+        const decoded: TokenData = jwtDecode(response.data.data.token);
+        setTokenData(decoded);
+        setIsMpinSet(true);
+      } else {
+        // Update local state if no new token
+        setIsMpinSet(true);
+        setTokenData((prev) =>
+          prev
+            ? {
+                ...prev,
+                data: {
+                  ...prev.data,
+                  is_mpin_set: true,
+                },
+              }
+            : prev
+        );
+      }
+      
+      setShowMpinDialog(false);
+      setMpin("");
+      setConfirmMpin("");
+      
+      toast({
+        title: "MPIN Set Successfully",
+        description: "You can now proceed with payout transactions.",
+      });
+    } catch (err: any) {
+      setMpinError(err.response?.data?.message || "Failed to set MPIN. Please try again.");
+      toast({
+        title: "Failed to Set MPIN",
+        description: err.response?.data?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingMpin(false);
+    }
+  };
+
+  // MPIN Verification Handler
+  const handleMpinVerificationInput = (value: string) => {
+    if (/^\d{0,4}$/.test(value)) {
+      setVerifiedMpin(value);
+      setMpinVerificationError(null);
+    }
+  };
+
+  const handleMpinVerification = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (verifiedMpin.length !== 4) {
+      setMpinVerificationError("MPIN must be exactly 4 digits.");
+      return;
+    }
+
+    // Close verification dialog and proceed with payout
+    setShowMpinVerificationDialog(false);
+    setMpinVerificationError(null);
+    
+    // Submit payout with verified MPIN
+    await submitPayout();
   };
 
   const handlePaySubmit = async () => {
     if (!selectedBeneficiary) return;
 
-    if (
-      !payFormData.transactionType ||
-      !payFormData.amount ||
-      !payFormData.mpin
-    ) {
+    if (!payFormData.transactionType || !payFormData.amount) {
       toast({
         title: "Error",
         description: "Please fill all fields",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check if MPIN is set
+    if (!isMpinSet) {
+      toast({
+        title: "MPIN Setup Required",
+        description: "Please set your MPIN first to proceed with payout.",
+        variant: "destructive",
+      });
+      setShowMpinDialog(true);
+      return;
+    }
+
+    // If MPIN is set, show verification dialog
+    setShowMpinVerificationDialog(true);
+    setVerifiedMpin("");
+    setMpinVerificationError(null);
+  };
+
+  const submitPayout = async () => {
+    if (!selectedBeneficiary) return;
+
+    // Double-check MPIN before submission
+    if (!verifiedMpin || verifiedMpin.length !== 4) {
+      toast({
+        title: "Error",
+        description: "Please verify your MPIN first.",
+        variant: "destructive",
+      });
+      setShowMpinVerificationDialog(true);
       return;
     }
 
@@ -257,7 +485,7 @@ export default function Settlement() {
         transfer_type: payFormData.transactionType,
         remarks: "",
         commission: (parseFloat(payFormData.amount) * 0.01).toFixed(2),
-        mpin: payFormData.mpin,
+        mpin: verifiedMpin,
       };
 
 
@@ -281,17 +509,27 @@ export default function Settlement() {
       setPayFormData({
         transactionType: "",
         amount: "",
-        mpin: "",
       });
+      setVerifiedMpin("");
       
       // Refresh beneficiaries list
       if (payoutPhoneNumber) {
         await fetchBeneficiaries(payoutPhoneNumber);
       }
     } catch (error: any) {
+      // Clear MPIN on error
+      setVerifiedMpin("");
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Invalid MPIN or request failed. Please try again.";
+      setMpinVerificationError(errorMessage);
+      
+      // Show MPIN dialog again if request fails (likely due to invalid MPIN)
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.data?.message?.toLowerCase().includes("mpin")) {
+        setShowMpinVerificationDialog(true);
+      }
+      
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Payout failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -680,26 +918,6 @@ export default function Settlement() {
                 />
               </div>
 
-              {/* MPIN */}
-              <div className="space-y-2">
-                <Label htmlFor="mpin">MPIN *</Label>
-                <Input
-                  id="mpin"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={payFormData.mpin}
-                  onChange={(e) =>
-                    setPayFormData({
-                      ...payFormData,
-                      mpin: e.target.value.replace(/\D/g, "").slice(0, 4),
-                    })
-                  }
-                  placeholder="Enter 4-digit MPIN"
-                  className="text-center tracking-[0.5em] h-11"
-                  required
-                />
-              </div>
             </div>
           )}
 
@@ -715,6 +933,174 @@ export default function Settlement() {
               {loading ? "Processing..." : "Submit"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MPIN Setup Dialog - Only show when MPIN is not set */}
+      {!isMpinSet && (
+        <Dialog
+          open={showMpinDialog}
+          onOpenChange={(open) => {
+            // Prevent closing if MPIN is not set
+            if (!isMpinSet) {
+              setShowMpinDialog(true);
+            } else {
+              setShowMpinDialog(open);
+            }
+          }}
+        >
+          <DialogContent
+            className="sm:max-w-md bg-background border-border"
+            onEscapeKeyDown={(event) => {
+              if (!isMpinSet) event.preventDefault();
+            }}
+            onInteractOutside={(event) => {
+              if (!isMpinSet) event.preventDefault();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">
+                Set Your MPIN
+              </DialogTitle>
+              <DialogDescription>
+                Create a 4-digit MPIN to secure your transactions.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleMpinSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mpin">MPIN</Label>
+                <Input
+                  id="mpin"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={mpin}
+                  maxLength={4}
+                  placeholder="Enter 4-digit MPIN"
+                  onChange={(event) => handleMpinInput(event.target.value, setMpin)}
+                  required
+                  className="text-center tracking-[0.5em]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmMpin">Confirm MPIN</Label>
+                <Input
+                  id="confirmMpin"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={confirmMpin}
+                  maxLength={4}
+                  placeholder="Re-enter MPIN"
+                  onChange={(event) =>
+                    handleMpinInput(event.target.value, setConfirmMpin)
+                  }
+                  required
+                  className="text-center tracking-[0.5em]"
+                />
+              </div>
+
+              {mpinError && (
+                <p className="text-sm text-destructive font-medium">{mpinError}</p>
+              )}
+
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  className="w-full paybazaar-gradient text-white hover:opacity-90"
+                  disabled={isSavingMpin}
+                >
+                  {isSavingMpin ? "Saving..." : "Save MPIN"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* MPIN Verification Dialog - Show after form submission */}
+      <Dialog
+        open={showMpinVerificationDialog}
+        onOpenChange={(open) => {
+          // Allow closing only if not during submission
+          if (!loading) {
+            setShowMpinVerificationDialog(open);
+            if (!open) {
+              // Reset MPIN when dialog is closed
+              setVerifiedMpin("");
+              setMpinVerificationError(null);
+            }
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md bg-background border-border"
+          onEscapeKeyDown={(event) => {
+            if (loading) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (loading) event.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Enter Your MPIN
+            </DialogTitle>
+            <DialogDescription>
+              Please enter your 4-digit MPIN to submit the payout request.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleMpinVerification} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="verifyMpin">MPIN</Label>
+              <Input
+                id="verifyMpin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={verifiedMpin}
+                maxLength={4}
+                placeholder="Enter 4-digit MPIN"
+                onChange={(event) => handleMpinVerificationInput(event.target.value)}
+                required
+                className="text-center tracking-[0.5em]"
+                disabled={loading}
+                autoFocus
+              />
+            </div>
+
+            {mpinVerificationError && (
+              <p className="text-sm text-destructive font-medium">
+                {mpinVerificationError}
+              </p>
+            )}
+
+            <DialogFooter className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                disabled={loading}
+                onClick={() => {
+                  setShowMpinVerificationDialog(false);
+                  setVerifiedMpin("");
+                  setMpinVerificationError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 paybazaar-gradient text-white hover:opacity-90"
+                disabled={loading}
+              >
+                {loading ? "Submitting..." : "Submit"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
