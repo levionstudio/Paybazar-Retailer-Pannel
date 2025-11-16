@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,35 +17,164 @@ import {
   Building2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
+import { useToast } from "@/hooks/use-toast";
+
+interface TokenData {
+  data: {
+    user_id?: string;
+  };
+}
+
+interface UserProfile {
+  user_id: string;
+  user_unique_id?: string;
+  user_name: string;
+  user_email: string;
+  user_phone: string;
+  user_aadhar_number: string;
+  user_pan_number: string;
+  user_city: string;
+  user_state: string;
+  user_address: string;
+  user_pincode: string;
+  user_date_of_birth: string;
+  user_gender: string;
+  user_kyc_status: boolean;
+}
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const userInfo = {
-    name: "Lokesh Kumar",
-    userId: "RT6170",
-    kycStatus: "VERIFIED",
+  const [userInfo, setUserInfo] = useState({
+    name: "",
+    userId: "",
+    kycStatus: "NOT VERIFIED",
     avatar: "/lovable-uploads/c0876286-fbc5-4e25-b7e8-cb81e868b3fe.png",
-    presentShop: "LOKESH TELICOM",
-    mobileNo: "9205008239",
-    email: "LOKESHHCL@GMAIL.COM",
-    lastName: "KUMAR",
-    dateOfBirth: "15/03/1992",
-    gender: "MALE",
-    aadhaarNumber: "225917326264",
-    panNumber: "KEYPS8635K",
-    city: "ALWAR",
-    state: "RAJASTHAN",
-    pinCode: "321605",
-    address: "KARANPURA, POST - TASAI, KATHUMAR, ALWAR(RAJ.)",
+    presentShop: "",
+    mobileNo: "",
+    email: "",
+    lastName: "",
+    dateOfBirth: "",
+    gender: "",
+    aadhaarNumber: "",
+    panNumber: "",
+    city: "",
+    state: "",
+    pinCode: "",
+    address: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  // Format date from DD-MM-YYYY to DD/MM/YYYY for display
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return "";
+    return dateString.replace(/-/g, "/");
   };
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view your profile.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Get user_id from token
+        const decoded: TokenData = jwtDecode(token);
+        if (!decoded.data?.user_id) {
+          toast({
+            title: "Error",
+            description: "User ID not found. Please log in again.",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/user/get/profile/${decoded.data.user_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data.status === "success" && response.data.data?.user) {
+          const userData: UserProfile = response.data.data.user;
+          
+          // Map API data to display format
+          setUserInfo({
+            name: userData.user_name || "",
+            userId: userData.user_unique_id || userData.user_id || "",
+            kycStatus: userData.user_kyc_status ? "VERIFIED" : "NOT VERIFIED",
+            avatar: "/lovable-uploads/c0876286-fbc5-4e25-b7e8-cb81e868b3fe.png",
+            presentShop: "", // Not available in API
+            mobileNo: userData.user_phone || "",
+            email: userData.user_email || "",
+            lastName: "", // Not available separately in API
+            dateOfBirth: formatDateForDisplay(userData.user_date_of_birth || ""),
+            gender: userData.user_gender || "",
+            aadhaarNumber: userData.user_aadhar_number || "",
+            panNumber: userData.user_pan_number || "",
+            city: userData.user_city || "",
+            state: userData.user_state || "",
+            pinCode: userData.user_pincode || "",
+            address: userData.user_address || "",
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description: "Could not load profile data.",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching profile:", error);
+        
+        let errorMessage = "Failed to load profile data.";
+        
+        if (error.response?.status === 401) {
+          errorMessage = "Session expired. Please log in again.";
+          setTimeout(() => navigate("/login"), 2000);
+        } else if (error.response?.status === 404) {
+          errorMessage = "Profile not found.";
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate, toast]);
 
   const infoSections = [
     {
       title: "Contact Information",
       icon: Phone,
       items: [
-        { label: "Present Shop", value: userInfo.presentShop, icon: Building2 },
         { label: "Mobile No", value: userInfo.mobileNo, icon: Phone },
         { label: "Email", value: userInfo.email, icon: Mail },
       ],
@@ -53,7 +183,6 @@ export default function Profile() {
       title: "Personal Details",
       icon: Calendar,
       items: [
-        { label: "Last Name", value: userInfo.lastName },
         { label: "Date of Birth", value: userInfo.dateOfBirth, icon: Calendar },
         { label: "Gender", value: userInfo.gender },
       ],
@@ -106,6 +235,15 @@ export default function Profile() {
             </h1>
           </div>
 
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading profile data...</p>
+              </div>
+            </div>
+          ) : (
+            <>
           {/* Profile Hero Section */}
           <Card className="paybazaar-gradient border-0">
             <CardContent className="p-8">
@@ -208,7 +346,11 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="justify-start">
+                <Button 
+                  variant="outline" 
+                  className="justify-start"
+                  onClick={() => navigate("/profile/update")}
+                >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
@@ -223,6 +365,8 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+          </>
+          )}
         </main>
       </div>
     </div>
