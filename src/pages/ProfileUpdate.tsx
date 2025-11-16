@@ -111,11 +111,11 @@ export default function ProfileUpdate() {
             description: "Your profile information has been loaded successfully.",
           });
         } else {
-          toast({
-            title: "Warning",
-            description: "Could not load profile data. You can still update your profile.",
-            variant: "destructive",
-          });
+          // toast({
+          //   title: "Warning",
+          //   description: "Could not load profile data. You can still update your profile.",
+          //   variant: "destructive",
+          // });
         }
       } catch (error: any) {
         console.error("Error fetching profile:", error);
@@ -131,11 +131,11 @@ export default function ProfileUpdate() {
           errorMessage = error.response.data.message;
         }
 
-        toast({
-          title: "Warning",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        // toast({
+        //   title: "Warning",
+        //   description: errorMessage,
+        //   variant: "destructive",
+        // });
       } finally {
         setFetchingProfile(false);
       }
@@ -286,6 +286,7 @@ export default function ProfileUpdate() {
           title: "Success",
           description: response.data.message || "Profile updated successfully!",
         });
+        
 
         // Optionally refresh the page or navigate back
         setTimeout(() => {

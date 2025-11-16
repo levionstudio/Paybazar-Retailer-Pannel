@@ -91,7 +91,7 @@ export default function Profile() {
 
       try {
         setLoading(true);
-        
+
         // Get user_id from token
         const decoded: TokenData = jwtDecode(token);
         if (!decoded.data?.user_id) {
@@ -105,7 +105,9 @@ export default function Profile() {
         }
 
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/user/get/profile/${decoded.data.user_id}`,
+          `${import.meta.env.VITE_API_BASE_URL}/user/get/profile/${
+            decoded.data.user_id
+          }`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -116,7 +118,7 @@ export default function Profile() {
 
         if (response.data.status === "success" && response.data.data?.user) {
           const userData: UserProfile = response.data.data.user;
-          
+
           // Map API data to display format
           setUserInfo({
             name: userData.user_name || "",
@@ -127,7 +129,9 @@ export default function Profile() {
             mobileNo: userData.user_phone || "",
             email: userData.user_email || "",
             lastName: "", // Not available separately in API
-            dateOfBirth: formatDateForDisplay(userData.user_date_of_birth || ""),
+            dateOfBirth: formatDateForDisplay(
+              userData.user_date_of_birth || ""
+            ),
             gender: userData.user_gender || "",
             aadhaarNumber: userData.user_aadhar_number || "",
             panNumber: userData.user_pan_number || "",
@@ -136,18 +140,14 @@ export default function Profile() {
             pinCode: userData.user_pincode || "",
             address: userData.user_address || "",
           });
-        } else {
-          toast({
-            title: "Warning",
-            description: "Could not load profile data.",
-            variant: "destructive",
-          });
-        }
+        } 
       } catch (error: any) {
+        window.location.href = "/profile/update";
+
         console.error("Error fetching profile:", error);
-        
+
         let errorMessage = "Failed to load profile data.";
-        
+
         if (error.response?.status === 401) {
           errorMessage = "Session expired. Please log in again.";
           setTimeout(() => navigate("/login"), 2000);
@@ -157,11 +157,11 @@ export default function Profile() {
           errorMessage = error.response.data.message;
         }
 
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        // toast({
+        //   title: "Error",
+        //   description: errorMessage,
+        //   variant: "destructive",
+        // });
       } finally {
         setLoading(false);
       }
@@ -244,128 +244,124 @@ export default function Profile() {
             </div>
           ) : (
             <>
-          {/* Profile Hero Section */}
-          <Card className="paybazaar-gradient border-0">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                <Avatar className="h-24 w-24 ring-4 ring-white/20">
-                  <AvatarImage src={userInfo.avatar} alt={userInfo.name} />
-                  <AvatarFallback className="text-2xl bg-white/10 text-white">
-                    {userInfo.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
+              {/* Profile Hero Section */}
+              <Card className="paybazaar-gradient border-0">
+                <CardContent className="p-8">
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <Avatar className="h-24 w-24 ring-4 ring-white/20">
+                      <AvatarImage src={userInfo.avatar} alt={userInfo.name} />
+                      <AvatarFallback className="text-2xl bg-white/10 text-white">
+                        {userInfo.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
 
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">
-                      {userInfo.name}
-                    </h2>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-white/90 text-lg">
-                        {userInfo.userId}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-500/20 text-green-100 border-green-400/30 hover:bg-green-500/30"
-                      >
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        {userInfo.kycStatus}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="secondary"
-                    onClick={() => navigate("/profile/update")}
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Update Profile
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Information Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {infoSections.map((section, sectionIndex) => (
-              <Card
-                key={sectionIndex}
-                className="hover:shadow-lg transition-shadow duration-200"
-              >
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <section.icon className="h-5 w-5 text-primary" />
-                    {section.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {section.items.map((item, itemIndex) => (
-                    <div
-                      key={itemIndex}
-                      className={`${item.fullWidth ? "col-span-full" : ""}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {item.icon && (
-                          <item.icon className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-muted-foreground mb-1">
-                            {item.label}
-                          </p>
-                          {item.isStatus ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              {item.value}
-                            </Badge>
-                          ) : (
-                            <p className="text-sm text-foreground font-medium break-words">
-                              {item.value}
-                            </p>
-                          )}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h2 className="text-3xl font-bold text-white mb-2">
+                          {userInfo.name}
+                        </h2>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-white/90 text-lg">
+                            {userInfo.userId}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-500/20 text-green-100 border-green-400/30 hover:bg-green-500/30"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {userInfo.kycStatus}
+                          </Badge>
                         </div>
                       </div>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() => navigate("/profile/update")}
+                        className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Update Profile
+                      </Button>
                     </div>
-                  ))}
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
 
-          {/* Additional Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="justify-start"
-                  onClick={() => navigate("/profile/update")}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-                <Button variant="outline" className="justify-start">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Update KYC
-                </Button>
-                <Button variant="outline" className="justify-start">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Contact Support
-                </Button>
+              {/* Information Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {infoSections.map((section, sectionIndex) => (
+                  <Card
+                    key={sectionIndex}
+                    className="hover:shadow-lg transition-shadow duration-200"
+                  >
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <section.icon className="h-5 w-5 text-primary" />
+                        {section.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {section.items.map((item, itemIndex) => (
+                        <div
+                          key={itemIndex}
+                          className={`${item.fullWidth ? "col-span-full" : ""}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {item.icon && (
+                              <item.icon className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-muted-foreground mb-1">
+                                {item.label}
+                              </p>
+                              {item.isStatus ? (
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  {item.value}
+                                </Badge>
+                              ) : (
+                                <p className="text-sm text-foreground font-medium break-words">
+                                  {item.value}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-          </>
+
+              {/* Additional Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => navigate("/profile/update")}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                    <Button variant="outline" className="justify-start">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Update KYC
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
         </main>
       </div>
