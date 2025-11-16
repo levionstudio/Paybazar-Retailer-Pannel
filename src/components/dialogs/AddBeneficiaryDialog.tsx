@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
@@ -15,12 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddBeneficiaryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd?: (data: BeneficiaryFormData) => void;
-  bankToIFSC?: Record<string, string>;
+  mobileNumber?: string; // Phone number from login
 }
 
 interface BeneficiaryFormData {
@@ -31,12 +33,18 @@ interface BeneficiaryFormData {
   mobileNumber: string;
 }
 
+interface Bank {
+  bank_name: string;
+  ifsc_code: string;
+}
+
 export function AddBeneficiaryDialog({
   open,
   onOpenChange,
   onAdd,
-  bankToIFSC = {},
+  mobileNumber = "",
 }: AddBeneficiaryDialogProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState<BeneficiaryFormData>({
     bank: "",
     ifsc: "",
@@ -45,21 +53,61 @@ export function AddBeneficiaryDialog({
     mobileNumber: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedBankIFSC, setSelectedBankIFSC] = useState("");
 
-  const banks = [
-    "State Bank of India",
-    "HDFC Bank",
-    "ICICI Bank",
-    "Punjab National Bank",
-    "Bank of Baroda",
-    "Canara Bank",
-    "Union Bank of India",
-    "Axis Bank",
-    "Kotak Mahindra Bank",
-    "IndusInd Bank",
-    "IDFC FIRST Bank",
-    "IDFC Bank Limited",
-  ];
+  // Fetch banks from API
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/user/get/banks`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data.status === "success" && response.data.data?.banks) {
+          setBanks(response.data.data.banks);
+        }
+      } catch (error: any) {
+        console.error("Error fetching banks:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch banks. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (open) {
+      fetchBanks();
+    }
+  }, [open, toast]);
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        bank: "",
+        ifsc: "",
+        accountNumber: "",
+        beneficiaryName: "",
+        mobileNumber: "",
+      });
+      setErrors({});
+      setSelectedBankIFSC("");
+    }
+  }, [open]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -100,25 +148,66 @@ export function AddBeneficiaryDialog({
     alert("Account verified successfully!");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
-    if (onAdd) {
-      onAdd(formData);
-    }
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("authToken");
+      
+      const payload = {
+        mobile_number: mobileNumber, // Logged-in user's phone number (from login)
+        bank_name: formData.bank,
+        ifsc_code: formData.ifsc,
+        account_number: formData.accountNumber,
+        beneficiary_name: formData.beneficiaryName,
+        beneficiary_phone: formData.mobileNumber, // Beneficiary's phone number (user enters this)
+      };
 
-    // Reset form and close dialog
-    setFormData({
-      bank: "",
-      ifsc: "",
-      accountNumber: "",
-      beneficiaryName: "",
-      mobileNumber: "",
-    });
-    setErrors({});
-    onOpenChange(false);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/user/add/beneficiary`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        toast({
+          title: "Success",
+          description: "Beneficiary added successfully",
+        });
+
+        if (onAdd) {
+          onAdd(formData);
+        }
+
+        // Reset form and close dialog
+        setFormData({
+          bank: "",
+          ifsc: "",
+          accountNumber: "",
+          beneficiaryName: "",
+          mobileNumber: "",
+        });
+        setErrors({});
+        setSelectedBankIFSC("");
+        onOpenChange(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add beneficiary",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -130,16 +219,57 @@ export function AddBeneficiaryDialog({
       mobileNumber: "",
     });
     setErrors({});
+    setSelectedBankIFSC("");
     onOpenChange(false);
   };
 
-  const handleBankChange = (value: string) => {
-    const ifsc = bankToIFSC[value] || "";
-    setFormData({
-      ...formData,
-      bank: value,
-      ifsc: ifsc,
-    });
+  const handleBankChange = (bankName: string) => {
+    const selectedBank = banks.find((b) => b.bank_name === bankName);
+    if (selectedBank) {
+      // Get prefix - first 3 or 4 letters (whichever is available, typically 4)
+      const ifscPrefix = selectedBank.ifsc_code.substring(0, 4);
+      setSelectedBankIFSC(selectedBank.ifsc_code);
+      setFormData({
+        ...formData,
+        bank: bankName,
+        ifsc: ifscPrefix, // Auto-fill with prefix
+      });
+    }
+  };
+
+  const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    
+    // If bank is selected, ensure IFSC starts with bank's prefix (first 3-4 letters)
+    if (selectedBankIFSC) {
+      // Get the prefix from the selected bank's IFSC (first 3-4 letters)
+      const prefix = selectedBankIFSC.substring(0, 4);
+      
+      // If user is typing and value doesn't start with prefix, enforce prefix
+      if (value.length > 0) {
+        if (!value.startsWith(prefix)) {
+          // If user deleted prefix, restore it
+          if (value.length < prefix.length) {
+            value = prefix;
+          } else {
+            // Keep prefix and append remaining characters
+            value = prefix + value.substring(prefix.length);
+          }
+        }
+      }
+      
+      // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
+      if (value.length > 11) {
+        value = value.substring(0, 11);
+      }
+    } else {
+      // No bank selected, just limit to 11 characters
+      if (value.length > 11) {
+        value = value.substring(0, 11);
+      }
+    }
+    
+    setFormData({ ...formData, ifsc: value });
   };
 
   return (
@@ -165,11 +295,15 @@ export function AddBeneficiaryDialog({
                 <SelectValue placeholder="--Select Bank--" />
               </SelectTrigger>
               <SelectContent>
-                {banks.map((bank) => (
-                  <SelectItem key={bank} value={bank}>
-                    {bank}
-                  </SelectItem>
-                ))}
+                {loading ? (
+                  <SelectItem value="loading" disabled>Loading banks...</SelectItem>
+                ) : (
+                  banks.map((bank) => (
+                    <SelectItem key={bank.bank_name} value={bank.bank_name}>
+                      {bank.bank_name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {errors.bank && (
@@ -187,12 +321,7 @@ export function AddBeneficiaryDialog({
                 id="ifsc"
                 type="text"
                 value={formData.ifsc}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    ifsc: e.target.value.toUpperCase(),
-                  })
-                }
+                onChange={handleIFSCChange}
                 placeholder="Enter IFSC"
                 className="uppercase"
                 maxLength={11}
@@ -253,10 +382,10 @@ export function AddBeneficiaryDialog({
             )}
           </div>
 
-          {/* Mobile Number */}
+          {/* Beneficiary Phone Number */}
           <div className="space-y-2">
             <Label htmlFor="mobileNumber" className="text-sm font-medium">
-              Mobile Number
+              Beneficiary Phone Number
             </Label>
             <Input
               id="mobileNumber"
@@ -265,7 +394,7 @@ export function AddBeneficiaryDialog({
               onChange={(e) =>
                 setFormData({ ...formData, mobileNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })
               }
-              placeholder="Enter Mobile Number"
+              placeholder="Enter Beneficiary Phone Number"
               maxLength={10}
             />
             {errors.mobileNumber && (
@@ -286,8 +415,9 @@ export function AddBeneficiaryDialog({
             <Button
               type="submit"
               className="flex-1 paybazaar-gradient text-white"
+              disabled={isSubmitting || loading}
             >
-              Submit
+              {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
           </div>
         </form>

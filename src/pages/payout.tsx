@@ -372,9 +372,29 @@ const PayoutRequest = () => {
       return;
     }
 
-    // Prepare payload with all form data and MPIN
+    // Decode token to get user_id (EXACT same approach as settlement.tsx)
+    const authToken = localStorage.getItem("authToken");
+    const base64Url = authToken?.split('.')[1];
+    const base64 = base64Url ? base64Url.replace(/-/g, '+').replace(/_/g, '/') : '';
+    const decodedToken = base64 ? JSON.parse(atob(base64)) : {};
+    
+    // Use decodedToken.user_id directly (same as settlement.tsx)
+    // Fallback to tokenData if decodedToken doesn't have user_id
+    let userId = decodedToken.user_id || decodedToken.data?.user_id || tokenData?.data?.user_id;
+    
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID not found. Please log in again.",
+        variant: "destructive",
+      });
+      redirectTo("/login");
+      return;
+    }
+
+    // Prepare payload with all form data and MPIN (EXACT same structure as settlement.tsx)
     const payload: PayoutPayload = {
-      user_id: tokenData.data.user_id,
+      user_id: userId,
       mobile_number: formData.mobile_number,
       account_number: formData.account_number,
       ifsc_code: formData.ifsc_code,
@@ -382,25 +402,49 @@ const PayoutRequest = () => {
       beneficiary_name: formData.beneficiary_name,
       amount: formData.amount,
       transfer_type: formData.transfer_type,
-      remarks: formData.remarks,
+      remarks: formData.remarks || "",
       commission: commission,
       mpin: verifiedMpin,
     };
 
-    // Log the complete payload (mask MPIN for security)
-    console.log("=== Payout Request Payload ===");
+    // Log the complete payload in a clear, readable format (same as settlement.tsx)
+    console.log("==========================================");
+    console.log("=== PAYOUT REQUEST PAYLOAD ===");
+    console.log("==========================================");
     console.log("API URL:", `${import.meta.env.VITE_API_BASE_URL}/user/payout`);
-    console.log("Payload (MPIN masked):", {
-      ...payload,
-      mpin: payload.mpin ? "****" : undefined,
+    console.log("\n--- DECODED TOKEN ---");
+    console.log(JSON.stringify(decodedToken, null, 2));
+    console.log("\n--- USER ID SOURCE ---");
+    console.log("decodedToken.user_id:", decodedToken.user_id);
+    console.log("decodedToken.data?.user_id:", decodedToken.data?.user_id);
+    console.log("tokenData.data.user_id:", tokenData?.data?.user_id);
+    console.log("Final userId used:", userId);
+    console.log("\n--- PAYLOAD (JSON) - COMPLETE ---");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log("\n--- PAYLOAD (Object with MPIN hidden) ---");
+    console.log({
+      user_id: payload.user_id,
+      mobile_number: payload.mobile_number,
+      account_number: payload.account_number,
+      ifsc_code: payload.ifsc_code,
+      bank_name: payload.bank_name,
+      beneficiary_name: payload.beneficiary_name,
+      amount: payload.amount,
+      transfer_type: payload.transfer_type,
+      remarks: payload.remarks,
+      commission: payload.commission,
+      mpin: "**** (hidden)",
       mpin_length: payload.mpin?.length,
-      mpin_type: typeof payload.mpin,
     });
-    console.log("Full Payload JSON:", JSON.stringify(payload, null, 2));
-    console.log("Headers:", {
+    console.log("\n--- VALIDATION ---");
+    console.log("Has user_id:", !!payload.user_id);
+    console.log("user_id value:", payload.user_id);
+    console.log("\n--- HEADERS ---");
+    console.log({
       Authorization: `Bearer ${token?.substring(0, 20)}...`,
       "Content-Type": "application/json",
     });
+    console.log("==========================================");
 
     try {
       setLoading(true);
@@ -445,22 +489,31 @@ const PayoutRequest = () => {
       }, 1500);
     } catch (err: any) {
       // Log detailed error information
-      console.error("=== Payout Error ===");
-      console.error("Error Object:", err);
-      console.error("Error Response Status:", err.response?.status);
-      console.error("Error Response Headers:", err.response?.headers);
-      console.error("Error Response Data:", JSON.stringify(err.response?.data, null, 2));
+      console.error("==========================================");
+      console.error("=== PAYOUT ERROR ===");
+      console.error("==========================================");
+      console.error("Error Status:", err.response?.status);
       console.error("Error Message:", err.message);
-      console.error("Request Payload (for reference):", {
+      console.error("\n--- ERROR RESPONSE DATA ---");
+      console.error(JSON.stringify(err.response?.data, null, 2));
+      console.error("\n--- REQUEST PAYLOAD (that was sent) ---");
+      console.error(JSON.stringify({
         ...payload,
         mpin: "****",
         mpin_length: payload.mpin?.length,
-      });
-      console.error("Verified MPIN State:", {
+      }, null, 2));
+      console.error("\n--- FULL PAYLOAD JSON (for debugging) ---");
+      console.error(JSON.stringify(payload, null, 2));
+      console.error("\n--- VERIFIED MPIN STATE ---");
+      console.error({
         verifiedMpin_length: verifiedMpin.length,
         verifiedMpin_type: typeof verifiedMpin,
         verifiedMpin_value: verifiedMpin ? "****" : "empty",
       });
+      console.error("\n--- ERROR DETAILS ---");
+      console.error("Error Object:", err);
+      console.error("Error Response Headers:", err.response?.headers);
+      console.error("==========================================");
 
       // If payout fails (possibly due to invalid MPIN), clear MPIN and show error
       setVerifiedMpin("");

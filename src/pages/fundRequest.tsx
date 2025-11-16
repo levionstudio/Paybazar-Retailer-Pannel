@@ -36,6 +36,11 @@ interface TokenData {
   exp: number;
 }
 
+interface Bank {
+  bank_name: string;
+  ifsc_code: string;
+}
+
 
 const RequestFunds = () => {
   const { toast } = useToast();
@@ -51,38 +56,9 @@ const RequestFunds = () => {
     remarks: "",
   });
 
-  // Bank to IFSC mapping
-  const bankToIFSC: Record<string, string> = {
-    "State Bank of India": "SBIN",
-    "HDFC Bank": "HDFC",
-    "ICICI Bank": "ICIC",
-    "Punjab National Bank": "PUNB",
-    "Bank of Baroda": "BARB",
-    "Canara Bank": "CNRB",
-    "Union Bank of India": "UBIN",
-    "Axis Bank": "UTIB",
-    "Kotak Mahindra Bank": "KKBK",
-    "IndusInd Bank": "INDB",
-    "IDFC FIRST Bank": "IDFB",
-    "IDFC Bank Limited": "IDFB",
-  };
-
-  const banks = [
-    "State Bank of India",
-    "HDFC Bank",
-    "ICICI Bank",
-    "Punjab National Bank",
-    "Bank of Baroda",
-    "Canara Bank",
-    "Union Bank of India",
-    "Axis Bank",
-    "Kotak Mahindra Bank",
-    "IndusInd Bank",
-    "IDFC FIRST Bank",
-    "IDFC Bank Limited",
-  ];
-
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingBanks, setFetchingBanks] = useState(false);
   const [walletBalance] = useState(50000);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -95,11 +71,70 @@ const RequestFunds = () => {
     [navigate]
   );
 
+  // Fetch banks from API
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        setFetchingBanks(true);
+        const token = localStorage.getItem("authToken");
+        
+        if (!token) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/user/get/banks`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data.status === "success" && response.data.data?.banks) {
+          setBanks(response.data.data.banks);
+          toast({
+            title: "Success",
+            description: "Banks loaded successfully.",
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description: "No banks available. Please try again later.",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching banks:", error);
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to fetch banks. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setFetchingBanks(false);
+      }
+    };
+
+    fetchBanks();
+  }, [toast]);
+
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("authToken");
 
       if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to access this page.",
+          variant: "destructive",
+        });
         redirectTo("/login");
         return;
       }
@@ -111,7 +146,7 @@ const RequestFunds = () => {
           localStorage.removeItem("authToken");
           toast({
             title: "Session Expired",
-            description: "Please log in again.",
+            description: "Your session has expired. Please log in again.",
             variant: "destructive",
           });
           redirectTo("/login");
@@ -125,6 +160,11 @@ const RequestFunds = () => {
       } catch (err) {
         console.error("Token decode error:", err);
         localStorage.removeItem("authToken");
+        toast({
+          title: "Authentication Error",
+          description: "Invalid session. Please log in again.",
+          variant: "destructive",
+        });
         redirectTo("/login");
       } finally {
         setIsCheckingAuth(false);
@@ -142,35 +182,56 @@ const RequestFunds = () => {
   };
 
   const handleBankChange = (bankName: string) => {
-    const ifscPrefix = bankToIFSC[bankName] || "";
-    setFormData((prev) => ({
-      ...prev,
-      bank_name: bankName,
-      ifsc_code: ifscPrefix, // Auto-fill IFSC prefix when bank is selected
-    }));
+    const selectedBank = banks.find((b) => b.bank_name === bankName);
+    if (selectedBank) {
+      // Get prefix - first 4 letters of IFSC code
+      const ifscPrefix = selectedBank.ifsc_code.substring(0, 4);
+      setFormData((prev) => ({
+        ...prev,
+        bank_name: bankName,
+        ifsc_code: ifscPrefix, // Auto-fill IFSC prefix when bank is selected
+      }));
+      toast({
+        title: "Bank Selected",
+        description: `${bankName} selected. IFSC prefix auto-filled.`,
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        bank_name: bankName,
+      }));
+    }
   };
 
   const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     
     // If bank is selected, ensure IFSC starts with bank's prefix
-    if (formData.bank_name && bankToIFSC[formData.bank_name]) {
-      const prefix = bankToIFSC[formData.bank_name];
-      
-      // If user is typing and value doesn't start with prefix, prepend it
-      if (value.length > 0 && !value.startsWith(prefix)) {
-        // If user deleted prefix, restore it
-        if (value.length < prefix.length) {
-          value = prefix;
-        } else {
-          // Keep prefix and append remaining characters
-          value = prefix + value.substring(prefix.length);
+    if (formData.bank_name) {
+      const selectedBank = banks.find((b) => b.bank_name === formData.bank_name);
+      if (selectedBank) {
+        const prefix = selectedBank.ifsc_code.substring(0, 4);
+        
+        // If user is typing and value doesn't start with prefix, prepend it
+        if (value.length > 0 && !value.startsWith(prefix)) {
+          // If user deleted prefix, restore it
+          if (value.length < prefix.length) {
+            value = prefix;
+          } else {
+            // Keep prefix and append remaining characters
+            value = prefix + value.substring(prefix.length);
+          }
         }
-      }
-      
-      // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
-      if (value.length > 11) {
-        value = value.substring(0, 11);
+        
+        // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
+        if (value.length > 11) {
+          value = value.substring(0, 11);
+        }
+      } else {
+        // No bank found, just limit to 11 characters
+        if (value.length > 11) {
+          value = value.substring(0, 11);
+        }
       }
     } else {
       // No bank selected, just limit to 11 characters
@@ -182,12 +243,77 @@ const RequestFunds = () => {
     setFormData((prev) => ({ ...prev, ifsc_code: value }));
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.bank_name) {
+      errors.bank_name = "Please select a bank";
+    }
+    if (!formData.ifsc_code) {
+      errors.ifsc_code = "IFSC code is required";
+    } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifsc_code)) {
+      errors.ifsc_code = "Invalid IFSC code format (e.g., SBIN0001234)";
+    }
+    if (!formData.account_number) {
+      errors.account_number = "Account number is required";
+    } else if (formData.account_number.length < 9) {
+      errors.account_number = "Account number must be at least 9 digits";
+    }
+    if (!formData.bank_branch) {
+      errors.bank_branch = "Bank branch is required";
+    }
+    if (!formData.utr_number) {
+      errors.utr_number = "UTR number is required";
+    }
+    if (!formData.amount) {
+      errors.amount = "Amount is required";
+    } else if (parseFloat(formData.amount) <= 0) {
+      errors.amount = "Amount must be greater than 0";
+    }
+    if (!formData.remarks) {
+      errors.remarks = "Remarks are required";
+    } else if (formData.remarks.trim().length < 5) {
+      errors.remarks = "Remarks must be at least 5 characters";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      toast({
+        title: "Validation Error",
+        description: firstError,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tokenData) return;
+    
+    if (!tokenData) {
+      toast({
+        title: "Authentication Error",
+        description: "User session not found. Please log in again.",
+        variant: "destructive",
+      });
+      redirectTo("/login");
+      return;
+    }
+
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
 
     const token = localStorage.getItem("authToken");
     if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit the request.",
+        variant: "destructive",
+      });
       redirectTo("/login");
       return;
     }
@@ -211,6 +337,11 @@ const RequestFunds = () => {
     try {
       setLoading(true);
 
+      toast({
+        title: "Submitting Request",
+        description: "Please wait while we process your fund request...",
+      });
+
       const { data } = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/user/create/fund/request`,
         payload,
@@ -222,17 +353,62 @@ const RequestFunds = () => {
         }
       );
 
-      toast({
-        title: "Fund Request Submitted",
-        description: data.message || "Request submitted successfully.",
-      });
+      if (data.status === "success") {
+        toast({
+          title: "Success",
+          description: data.message || "Fund request submitted successfully. We will process it shortly.",
+        });
 
-      setTimeout(() => window.location.reload(), 800);
+        // Reset form
+        setFormData({
+          bank_name: "",
+          account_number: "",
+          ifsc_code: "",
+          bank_branch: "",
+          utr_number: "",
+          amount: "",
+          remarks: "",
+        });
+
+        setTimeout(() => {
+          toast({
+            title: "Redirecting",
+            description: "Redirecting to dashboard...",
+          });
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        toast({
+          title: "Request Failed",
+          description: data.message || "Failed to submit fund request. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (err: any) {
       console.error("Fund request error:", err);
+      
+      let errorMessage = "Something went wrong. Please try again.";
+      
+      if (err.response) {
+        if (err.response.status === 400) {
+          errorMessage = err.response.data?.message || "Invalid request data. Please check all fields.";
+        } else if (err.response.status === 401) {
+          errorMessage = "Session expired. Please log in again.";
+          setTimeout(() => redirectTo("/login"), 2000);
+        } else if (err.response.status === 403) {
+          errorMessage = "You don't have permission to perform this action.";
+        } else if (err.response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        } else {
+          errorMessage = err.response.data?.message || errorMessage;
+        }
+      } else if (err.request) {
+        errorMessage = "Network error. Please check your internet connection.";
+      }
+
       toast({
         title: "Request Failed",
-        description: err.response?.data?.message || "Something went wrong.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -291,16 +467,23 @@ const RequestFunds = () => {
                           value={formData.bank_name}
                           onValueChange={handleBankChange}
                           required
+                          disabled={fetchingBanks}
                         >
                           <SelectTrigger className="h-12 border-2 border-border focus:border-primary transition-colors bg-background hover:bg-muted/50">
-                            <SelectValue placeholder="--Select Bank--" />
+                            <SelectValue placeholder={fetchingBanks ? "Loading banks..." : "--Select Bank--"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {banks.map((bank) => (
-                              <SelectItem key={bank} value={bank}>
-                                {bank}
-                              </SelectItem>
-                            ))}
+                            {fetchingBanks ? (
+                              <SelectItem value="loading" disabled>Loading banks...</SelectItem>
+                            ) : banks.length === 0 ? (
+                              <SelectItem value="no-banks" disabled>No banks available</SelectItem>
+                            ) : (
+                              banks.map((bank) => (
+                                <SelectItem key={bank.bank_name} value={bank.bank_name}>
+                                  {bank.bank_name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

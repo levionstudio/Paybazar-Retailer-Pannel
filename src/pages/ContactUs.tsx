@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import {
   Card,
   CardContent,
@@ -21,9 +23,19 @@ import {
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+
+interface TokenData {
+  data: {
+    admin_id: string;
+  };
+}
 
 const ContactUs = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [adminId, setAdminId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -33,7 +45,19 @@ const ContactUs = () => {
     message: "",
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const decoded: TokenData = jwtDecode(token);
+        if (decoded?.data?.admin_id) {
+          setAdminId(decoded.data.admin_id);
+        }
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    }
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -42,15 +66,66 @@ const ContactUs = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData, selectedFile);
+
+    if (!adminId) {
+      toast({
+        title: "Error",
+        description: "Authentication required. Please login again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+
+      const payload = {
+        admin_id: adminId,
+        name: formData.name,
+        subject: formData.subject,
+        mobile: formData.mobile,
+        email: formData.email,
+        message: formData.message,
+      };
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/user/add/ticket`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        toast({
+          title: "Success",
+          description: response.data.message || "Ticket raised successfully",
+        });
+
+        // Reset form
+        setFormData({
+          name: "",
+          subject: "",
+          mobile: "",
+          email: "",
+          message: "",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to raise ticket",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,7 +259,7 @@ const ContactUs = () => {
 
                     {/* MESSAGE FIELD */}
                     <div className="space-y-2">
-                      <Label htmlFor="message">Message</Label>
+                      <Label htmlFor="message">Message *</Label>
                       <Textarea
                         id="message"
                         name="message"
@@ -192,33 +267,17 @@ const ContactUs = () => {
                         value={formData.message}
                         onChange={handleInputChange}
                         className="min-h-[120px] resize-none"
+                        required
                       />
-                    </div>
-
-                    {/* FILE UPLOAD */}
-                    <div className="space-y-2">
-                      <Label htmlFor="file">Attach File (Optional)</Label>
-                      <Input
-                        id="file"
-                        type="file"
-                        onChange={handleFileChange}
-                        className="h-11 cursor-pointer file:bg-slate-100 hover:file:bg-slate-200 file:text-sm file:px-4 file:py-2 file:rounded-lg"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      />
-
-                      {selectedFile && (
-                        <p className="text-sm text-muted-foreground">
-                          Selected: {selectedFile.name}
-                        </p>
-                      )}
                     </div>
 
                     {/* SUBMIT BUTTON */}
                     <Button
                       type="submit"
-                      className="w-full h-11 bg-paybazaar-accent hover:bg-paybazaar-accent/90 text-white font-medium"
+                      className="w-full h-11 paybazaar-gradient text-white hover:opacity-90 font-medium"
+                      disabled={loading}
                     >
-                      Submit
+                      {loading ? "Submitting..." : "Submit"}
                     </Button>
                   </form>
                 </CardContent>

@@ -34,45 +34,16 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
 interface Beneficiary {
-  id: string;
+  beneficiary_id: string;
   beneficiaryName: string;
   bankName: string;
   ifsc: string;
   accountNumber: string;
   mobileNumber: string;
+  beneficiary_phone: string;
   isVerified: boolean;
 }
 
-// Bank to IFSC mapping (sample data - you can expand this)
-const bankToIFSC: Record<string, string> = {
-  "State Bank of India": "SBIN0000001",
-  "HDFC Bank": "HDFC0000001",
-  "ICICI Bank": "ICIC0000001",
-  "Punjab National Bank": "PUNB0000001",
-  "Bank of Baroda": "BARB0XXXXXX",
-  "Canara Bank": "CNRB0000001",
-  "Union Bank of India": "UBIN0543560",
-  "Axis Bank": "UTIB0000001",
-  "Kotak Mahindra Bank": "KKBK0000958",
-  "IndusInd Bank": "INDB0000001",
-  "IDFC FIRST Bank": "IDFB0000001",
-  "IDFC Bank Limited": "IDFB0000001",
-};
-
-const banks = [
-  "State Bank of India",
-  "HDFC Bank",
-  "ICICI Bank",
-  "Punjab National Bank",
-  "Bank of Baroda",
-  "Canara Bank",
-  "Union Bank of India",
-  "Axis Bank",
-  "Kotak Mahindra Bank",
-  "IndusInd Bank",
-  "IDFC FIRST Bank",
-  "IDFC Bank Limited",
-];
 
 export default function Settlement() {
   const navigate = useNavigate();
@@ -84,17 +55,9 @@ export default function Settlement() {
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [selectedBeneficiary, setSelectedBeneficiary] =
     useState<Beneficiary | null>(null);
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
-    {
-      id: "1",
-      beneficiaryName: "SRUJAN KM",
-      bankName: "UNION BANK OF INDIA",
-      ifsc: "UBIN0000001",
-      accountNumber: "10248252306",
-      mobileNumber: "8240285939",
-      isVerified: true,
-    },
-  ]);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchingBeneficiaries, setFetchingBeneficiaries] = useState(false);
 
   const [payFormData, setPayFormData] = useState({
     transactionType: "",
@@ -102,26 +65,68 @@ export default function Settlement() {
     mpin: "",
   });
 
+  const fetchBeneficiaries = async (phoneNumber: string) => {
+    try {
+      setFetchingBeneficiaries(true);
+      const token = localStorage.getItem("authToken");
+      
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/user/get/beneficiaries/${phoneNumber}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success" && response.data.data?.beneficieries) {
+        const mappedBeneficiaries: Beneficiary[] = response.data.data.beneficieries.map((b: any) => ({
+          beneficiary_id: b.beneficiary_id,
+          beneficiaryName: b.beneficiary_name,
+          bankName: b.bank_name,
+          ifsc: b.ifsc_code,
+          accountNumber: b.account_number,
+          mobileNumber: b.mobile_number,
+          beneficiary_phone: b.beneficiary_phone,
+          isVerified: b.beneficiary_verified || false,
+        }));
+        setBeneficiaries(mappedBeneficiaries);
+      } else {
+        setBeneficiaries([]);
+      }
+    } catch (error: any) {
+      console.error("Error fetching beneficiaries:", error);
+      setBeneficiaries([]);
+      if (error.response?.status !== 404) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch beneficiaries",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setFetchingBeneficiaries(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (!payoutPhoneNumber) {
       toast({
         title: "Error",
-        description: "Please enter both Phone Number",
+        description: "Please enter Phone Number",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Replace with actual API call
-      // const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payout/login`, {
-      //   user_id: payoutUserId,
-      //   password: payoutPassword,
-      // });
-
-      // For now, simulate successful login
       setIsAuthenticated(true);
       setShowLoginDialog(false);
+      
+      // Fetch beneficiaries after login
+      await fetchBeneficiaries(payoutPhoneNumber);
+      
       toast({
         title: "Login Successful",
         description: "Welcome to Payout Services",
@@ -135,41 +140,55 @@ export default function Settlement() {
     }
   };
 
-  const handleAddBeneficiary = (beneficiaryData: {
-    bank: string;
-    ifsc: string;
-    accountNumber: string;
-    beneficiaryName: string;
-    mobileNumber: string;
-  }) => {
-    const newBeneficiary: Beneficiary = {
-      id: Date.now().toString(),
-      beneficiaryName: beneficiaryData.beneficiaryName,
-      bankName: beneficiaryData.bank,
-      ifsc: beneficiaryData.ifsc,
-      accountNumber: beneficiaryData.accountNumber,
-      mobileNumber: beneficiaryData.mobileNumber,
-      isVerified: false,
-    };
-    setBeneficiaries([...beneficiaries, newBeneficiary]);
-    toast({
-      title: "Success",
-      description: "Beneficiary added successfully",
-    });
+  const handleAddBeneficiary = async () => {
+    // Refresh beneficiaries list after adding
+    if (payoutPhoneNumber) {
+      await fetchBeneficiaries(payoutPhoneNumber);
+    }
   };
 
-  const handleVerify = async (id: string) => {
-    setBeneficiaries(
-      beneficiaries.map((b) => (b.id === id ? { ...b, isVerified: true } : b))
-    );
-    toast({
-      title: "Success",
-      description: "Beneficiary verified successfully",
-    });
+  const handleVerify = async (beneficiaryId: string) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/user/verify/beneficiaries/${beneficiaryId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Check if verification is successful (returns true/false)
+      if (response.data === true || response.data.status === "success" || response.data.data === true) {
+        // Refresh beneficiaries list
+        if (payoutPhoneNumber) {
+          await fetchBeneficiaries(payoutPhoneNumber);
+        }
+        toast({
+          title: "Success",
+          description: "Beneficiary verified successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Verification failed. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to verify beneficiary",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setBeneficiaries(beneficiaries.filter((b) => b.id !== id));
+  const handleDelete = (beneficiaryId: string) => {
+    setBeneficiaries(beneficiaries.filter((b) => b.beneficiary_id !== beneficiaryId));
     toast({
       title: "Success",
       description: "Beneficiary deleted successfully",
@@ -203,17 +222,96 @@ export default function Settlement() {
     }
 
     try {
-      // Replace with actual API call
-      // const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payout/transfer`, {
-      //   beneficiary_id: selectedBeneficiary.id,
-      //   transaction_type: payFormData.transactionType,
-      //   amount: payFormData.amount,
-      //   mpin: payFormData.mpin,
-      // });
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      
+      // Use same payload structure as payout.tsx
+      // Fix: get user_id from decoded auth token
+      const authToken = localStorage.getItem("authToken");
+      // Decode the JWT token to get user_id (phone number)
+      const base64Url = authToken?.split('.')[1];
+      const base64 = base64Url ? base64Url.replace(/-/g, '+').replace(/_/g, '/') : '';
+      const decodedToken = base64 ? JSON.parse(atob(base64)) : {};
+      
+      // Get user_id with fallbacks
+      let userId = decodedToken.user_id || decodedToken.data?.user_id;
+      
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "User ID not found. Please log in again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const payload = {
+        user_id: userId,
+        mobile_number: selectedBeneficiary.beneficiary_phone || selectedBeneficiary.mobileNumber,
+        account_number: selectedBeneficiary.accountNumber,
+        ifsc_code: selectedBeneficiary.ifsc,
+        bank_name: selectedBeneficiary.bankName,
+        beneficiary_name: selectedBeneficiary.beneficiaryName,
+        amount: payFormData.amount,
+        transfer_type: payFormData.transactionType,
+        remarks: "",
+        commission: (parseFloat(payFormData.amount) * 0.01).toFixed(2),
+        mpin: payFormData.mpin,
+      };
+
+      // Log the complete payload in a clear, readable format
+      console.log("==========================================");
+      console.log("=== SETTLEMENT PAYOUT REQUEST PAYLOAD ===");
+      console.log("==========================================");
+      console.log("API URL:", `${import.meta.env.VITE_API_BASE_URL}/user/payout`);
+      console.log("\n--- DECODED TOKEN ---");
+      console.log(JSON.stringify(decodedToken, null, 2));
+      console.log("\n--- USER ID SOURCE ---");
+      console.log("decodedToken.user_id:", decodedToken.user_id);
+      console.log("decodedToken.data?.user_id:", decodedToken.data?.user_id);
+      console.log("Final userId used:", userId);
+      console.log("\n--- PAYLOAD (JSON) - COMPLETE ---");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("\n--- PAYLOAD (Object with MPIN hidden) ---");
+      console.log({
+        user_id: payload.user_id,
+        mobile_number: payload.mobile_number,
+        account_number: payload.account_number,
+        ifsc_code: payload.ifsc_code,
+        bank_name: payload.bank_name,
+        beneficiary_name: payload.beneficiary_name,
+        amount: payload.amount,
+        transfer_type: payload.transfer_type,
+        remarks: payload.remarks,
+        commission: payload.commission,
+        mpin: "**** (hidden)",
+        mpin_length: payload.mpin?.length,
+      });
+      console.log("\n--- VALIDATION ---");
+      console.log("Has user_id:", !!payload.user_id);
+      console.log("user_id value:", payload.user_id);
+      console.log("\n--- HEADERS ---");
+      console.log({
+        Authorization: `Bearer ${token?.substring(0, 20)}...`,
+        "Content-Type": "application/json",
+      });
+      console.log("==========================================");
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/user/payout`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       toast({
         title: "Success",
-        description: "Payout request submitted successfully",
+        description: response.data.message || "Payout request submitted successfully",
       });
 
       setShowPayDialog(false);
@@ -222,12 +320,19 @@ export default function Settlement() {
         amount: "",
         mpin: "",
       });
+      
+      // Refresh beneficiaries list
+      if (payoutPhoneNumber) {
+        await fetchBeneficiaries(payoutPhoneNumber);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.response?.data?.message || "Payout failed",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,7 +341,7 @@ export default function Settlement() {
       <div className="flex min-h-screen bg-background w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col w-full">
-          <Header walletBalance={0} />
+           <Header walletBalance={0} />
 
           <div className="paybazaar-gradient rounded-lg p-6 text-white m-6">
             <div className="flex items-center space-x-4 ">
@@ -409,7 +514,16 @@ export default function Settlement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {beneficiaries.length === 0 ? (
+                      {fetchingBeneficiaries ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                              <p className="text-sm text-muted-foreground">Loading beneficiaries...</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : beneficiaries.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={8} className="text-center py-16">
                             <div className="flex flex-col items-center justify-center">
@@ -428,7 +542,7 @@ export default function Settlement() {
                       ) : (
                         beneficiaries.map((beneficiary, index) => (
                           <TableRow
-                            key={beneficiary.id}
+                            key={beneficiary.beneficiary_id}
                             className={`hover:bg-muted/50 transition-colors ${
                               index % 2 === 0 ? "bg-background" : "bg-muted/20"
                             }`}
@@ -446,13 +560,14 @@ export default function Settlement() {
                               {beneficiary.accountNumber}
                             </TableCell>
                             <TableCell className="text-center py-4 font-mono">
-                              {beneficiary.mobileNumber}
+                              {beneficiary.beneficiary_phone || beneficiary.mobileNumber}
                             </TableCell>
                             <TableCell className="text-center py-4">
                               <Button
                                 size="sm"
                                 onClick={() => handlePayClick(beneficiary)}
                                 className="paybazaar-gradient text-white hover:opacity-90 shadow-md"
+                                disabled={!beneficiary.isVerified}
                               >
                                 <Eye className="h-4 w-4 mr-1" />
                                 Pay
@@ -471,7 +586,7 @@ export default function Settlement() {
                               ) : (
                                 <Button
                                   size="sm"
-                                  onClick={() => handleVerify(beneficiary.id)}
+                                  onClick={() => handleVerify(beneficiary.beneficiary_id)}
                                   className="bg-green-600 hover:bg-green-700 text-white shadow-md"
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -483,7 +598,7 @@ export default function Settlement() {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleDelete(beneficiary.id)}
+                                onClick={() => handleDelete(beneficiary.beneficiary_id)}
                                 className="shadow-md"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
@@ -507,7 +622,7 @@ export default function Settlement() {
         open={showAddBeneficiary}
         onOpenChange={setShowAddBeneficiary}
         onAdd={handleAddBeneficiary}
-        bankToIFSC={bankToIFSC}
+        mobileNumber={payoutPhoneNumber}
       />
 
       {/* Pay Dialog */}
@@ -566,15 +681,16 @@ export default function Settlement() {
 
               {/* Transaction Type */}
               <div className="space-y-2">
-                <Label htmlFor="transactionType">Transaction Type *</Label>
+                <Label htmlFor="transactionType">Transfer Type *</Label>
                 <Select
                   value={payFormData.transactionType}
                   onValueChange={(value) =>
                     setPayFormData({ ...payFormData, transactionType: value })
                   }
+                  required
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Transaction Type" />
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select Transfer Type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="IMPS">IMPS</SelectItem>
@@ -594,6 +710,10 @@ export default function Settlement() {
                     setPayFormData({ ...payFormData, amount: e.target.value })
                   }
                   placeholder="Enter amount"
+                  className="h-11"
+                  min="0"
+                  step="0.01"
+                  required
                 />
               </div>
 
@@ -609,11 +729,12 @@ export default function Settlement() {
                   onChange={(e) =>
                     setPayFormData({
                       ...payFormData,
-                      mpin: e.target.value.replace(/\D/g, ""),
+                      mpin: e.target.value.replace(/\D/g, "").slice(0, 4),
                     })
                   }
                   placeholder="Enter 4-digit MPIN"
-                  className="text-center tracking-[0.5em]"
+                  className="text-center tracking-[0.5em] h-11"
+                  required
                 />
               </div>
             </div>
@@ -626,8 +747,9 @@ export default function Settlement() {
             <Button
               onClick={handlePaySubmit}
               className="paybazaar-gradient text-white"
+              disabled={loading}
             >
-              Submit
+              {loading ? "Processing..." : "Submit"}
             </Button>
           </DialogFooter>
         </DialogContent>
