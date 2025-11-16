@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock, Shield } from "lucide-react";
+import axios from "axios";
+import { jwtDecode, JwtPayload } from "jwt-decode";
 
 const ChangePasswordMpin = () => {
   const { toast } = useToast();
@@ -20,6 +22,7 @@ const ChangePasswordMpin = () => {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [id, setId] = useState("");
 
   // MPIN form state
   const [mpinForm, setMpinForm] = useState({
@@ -30,6 +33,19 @@ const ChangePasswordMpin = () => {
   const [showOldMpin, setShowOldMpin] = useState(false);
   const [showNewMpin, setShowNewMpin] = useState(false);
   const [showConfirmMpin, setShowConfirmMpin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+
+    try {
+      const decoded: JwtPayload = jwtDecode(token);
+      //@ts-ignore
+      setId(decoded.data.user_id);
+    } catch (error) {
+      console.error("Error decoding JWT:", error);
+    }
+  }, []);
 
   // Handle Password Change
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -101,18 +117,36 @@ const ChangePasswordMpin = () => {
 
     try {
       // TODO: Replace with actual API call
-      // const response = await axios.post('API_ENDPOINT', mpinForm);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/user/verify/mpin`,
+        {
+          mpin: mpinForm.oldMpin,
+          user_id: id,
+        }
+      );
 
-      toast({
-        title: "Success",
-        description: "MPIN changed successfully",
-      });
-
-      setMpinForm({
-        oldMpin: "",
-        newMpin: "",
-        confirmMpin: "",
-      });
+      if (response.status === 200) {
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/user/set/mpin`,
+          {
+            mpin: mpinForm.newMpin,
+            user_id: id,
+          }
+        );
+        if (res.status === 200) {
+          toast({
+            title: "Success",
+            description: "MPIN changed successfully",
+          });
+          setMpinForm({
+            oldMpin: "",
+            newMpin: "",
+            confirmMpin: "",
+          });
+        }
+      }else{
+        throw new Error("Failed to change MPIN");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -143,7 +177,7 @@ const ChangePasswordMpin = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Change Password Card */}
-              <Card className="shadow-lg">
+              {/* <Card className="shadow-lg">
                 <CardHeader className="paybazaar-gradient text-white rounded-t-xl">
                   <CardTitle className="flex items-center gap-2">
                     Change Password
@@ -154,7 +188,6 @@ const ChangePasswordMpin = () => {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <form onSubmit={handlePasswordChange} className="space-y-4">
-                    {/* Old Password */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="oldPassword"
@@ -191,7 +224,6 @@ const ChangePasswordMpin = () => {
                       </div>
                     </div>
 
-                    {/* New Password */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="newPassword"
@@ -228,7 +260,6 @@ const ChangePasswordMpin = () => {
                       </div>
                     </div>
 
-                    {/* Confirm Password */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="confirmPassword"
@@ -276,9 +307,8 @@ const ChangePasswordMpin = () => {
                     </Button>
                   </form>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              {/* Change MPIN Card */}
               <Card className="shadow-lg">
                 <CardHeader className="paybazaar-gradient text-white rounded-t-xl">
                   <CardTitle className="flex items-center gap-2">
@@ -325,7 +355,6 @@ const ChangePasswordMpin = () => {
                       </div>
                     </div>
 
-                    {/* New MPIN */}
                     <div className="space-y-2">
                       <Label htmlFor="newMpin" className="text-sm font-medium">
                         New MPIN <span className="text-red-500">*</span>
