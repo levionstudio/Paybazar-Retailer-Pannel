@@ -260,43 +260,6 @@ export default function Settlement() {
         mpin: payFormData.mpin,
       };
 
-      // Log the complete payload in a clear, readable format
-      console.log("==========================================");
-      console.log("=== SETTLEMENT PAYOUT REQUEST PAYLOAD ===");
-      console.log("==========================================");
-      console.log("API URL:", `${import.meta.env.VITE_API_BASE_URL}/user/payout`);
-      console.log("\n--- DECODED TOKEN ---");
-      console.log(JSON.stringify(decodedToken, null, 2));
-      console.log("\n--- USER ID SOURCE ---");
-      console.log("decodedToken.user_id:", decodedToken.user_id);
-      console.log("decodedToken.data?.user_id:", decodedToken.data?.user_id);
-      console.log("Final userId used:", userId);
-      console.log("\n--- PAYLOAD (JSON) - COMPLETE ---");
-      console.log(JSON.stringify(payload, null, 2));
-      console.log("\n--- PAYLOAD (Object with MPIN hidden) ---");
-      console.log({
-        user_id: payload.user_id,
-        mobile_number: payload.mobile_number,
-        account_number: payload.account_number,
-        ifsc_code: payload.ifsc_code,
-        bank_name: payload.bank_name,
-        beneficiary_name: payload.beneficiary_name,
-        amount: payload.amount,
-        transfer_type: payload.transfer_type,
-        remarks: payload.remarks,
-        commission: payload.commission,
-        mpin: "**** (hidden)",
-        mpin_length: payload.mpin?.length,
-      });
-      console.log("\n--- VALIDATION ---");
-      console.log("Has user_id:", !!payload.user_id);
-      console.log("user_id value:", payload.user_id);
-      console.log("\n--- HEADERS ---");
-      console.log({
-        Authorization: `Bearer ${token?.substring(0, 20)}...`,
-        "Content-Type": "application/json",
-      });
-      console.log("==========================================");
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/user/payout`,
