@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Building2, Copy, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -63,6 +64,33 @@ const RequestFunds = () => {
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Bank details for fund transfer
+  const companyBankDetails = [
+    {
+      bankName: "AXIS BANK",
+      accountHolder: "PAYBAZAAR TECHNOLOGIES PRIVATE LIMITED",
+      accountNumber: "925020043148912",
+      ifscCode: "UTIB0000056",
+    },
+    {
+      bankName: "IDFC FIRST Bank",
+      accountHolder: "PAYBAZAAR TECHNOLOGIES PRIVATE LIMITED",
+      accountNumber: "10248252306",
+      ifscCode: "IDFB0020137",
+    },
+  ];
+
+  const copyToClipboard = (text: string, field: string, bankIndex: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(`${field}-${bankIndex}`);
+    toast({
+      title: "Copied!",
+      description: `${field} copied to clipboard`,
+    });
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const redirectTo = useCallback(
     (path: string) => {
@@ -435,6 +463,111 @@ const RequestFunds = () => {
         <Header walletBalance={walletBalance} />
         <div className="flex-1 overflow-y-auto">
           <main className="p-6 flex flex-col items-center">
+            {/* Bank Details Section */}
+            <div className="flex flex-col max-w-3xl w-full mb-6">
+              <Card className="shadow-lg border-2 border-primary/20 rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    Transfer Funds to Paybazaar Account
+                  </CardTitle>
+                  <CardDescription>
+                    Please transfer the amount to one of the following bank accounts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {companyBankDetails.map((bank, index) => (
+                      <div
+                        key={index}
+                        className="border border-border rounded-lg p-4 bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <Building2 className="h-4 w-4 text-primary" />
+                          <h3 className="font-semibold text-foreground">
+                            {bank.bankName}
+                          </h3>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <p className="text-muted-foreground text-xs mb-1">
+                              Account Holder
+                            </p>
+                            <p className="font-medium text-foreground">
+                              {bank.accountHolder}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs mb-1">
+                              Account Number
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono font-medium text-foreground">
+                                {bank.accountNumber}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    bank.accountNumber,
+                                    "account",
+                                    index
+                                  )
+                                }
+                                className="p-1 hover:bg-muted rounded transition-colors"
+                                title="Copy Account Number"
+                              >
+                                {copiedField === `account-${index}` ? (
+                                  <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs mb-1">
+                              IFSC Code
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono font-medium text-foreground">
+                                {bank.ifscCode}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    bank.ifscCode,
+                                    "ifsc",
+                                    index
+                                  )
+                                }
+                                className="p-1 hover:bg-muted rounded transition-colors"
+                                title="Copy IFSC Code"
+                              >
+                                {copiedField === `ifsc-${index}` ? (
+                                  <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-900 dark:text-blue-100">
+                      <strong>Note:</strong> After transferring funds, please fill
+                      the form below with your transaction details (UTR number,
+                      amount, etc.) to complete the fund request.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Fund Request Form */}
             <div className="flex flex-col max-w-3xl w-full">
               <Card className="shadow-lg border border-border rounded-xl overflow-hidden animate-fade-in">
