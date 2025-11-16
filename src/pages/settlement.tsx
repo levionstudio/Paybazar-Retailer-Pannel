@@ -82,7 +82,8 @@ export default function Settlement() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAddBeneficiary, setShowAddBeneficiary] = useState(false);
   const [showPayDialog, setShowPayDialog] = useState(false);
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
+  const [selectedBeneficiary, setSelectedBeneficiary] =
+    useState<Beneficiary | null>(null);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
     {
       id: "1",
@@ -93,7 +94,6 @@ export default function Settlement() {
       mobileNumber: "8240285939",
       isVerified: true,
     },
-  
   ]);
 
   const [payFormData, setPayFormData] = useState({
@@ -160,9 +160,7 @@ export default function Settlement() {
 
   const handleVerify = async (id: string) => {
     setBeneficiaries(
-      beneficiaries.map((b) =>
-        b.id === id ? { ...b, isVerified: true } : b
-      )
+      beneficiaries.map((b) => (b.id === id ? { ...b, isVerified: true } : b))
     );
     toast({
       title: "Success",
@@ -191,7 +189,11 @@ export default function Settlement() {
   const handlePaySubmit = async () => {
     if (!selectedBeneficiary) return;
 
-    if (!payFormData.transactionType || !payFormData.amount || !payFormData.mpin) {
+    if (
+      !payFormData.transactionType ||
+      !payFormData.amount ||
+      !payFormData.mpin
+    ) {
       toast({
         title: "Error",
         description: "Please fill all fields",
@@ -231,16 +233,31 @@ export default function Settlement() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen bg-background w-full">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col w-full">
           <Header walletBalance={0} />
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-md">
-              <div className="paybazaar-gradient rounded-lg p-6 text-white mb-6">
+
+          <div className="paybazaar-gradient rounded-lg p-6 text-white m-6">
+            <div className="flex items-center space-x-4 ">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/services")}
+                className="text-white hover:bg-slate-700"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div >
                 <h1 className="text-2xl font-bold">Remitter Login</h1>
-                <p className="text-white/90 mt-1">Enter your phone number to access payout services</p>
+                <p className="text-white/90 ">
+                  Enter your phone number to access payout services
+                </p>
               </div>
+            </div>
+          </div>
+          <div className="flex-1 flex  justify-center p-6">
+            <div className="w-full max-w-xl">
               <div className="bg-card rounded-lg border border-border shadow-lg p-8">
                 <form
                   onSubmit={(e) => {
@@ -250,7 +267,10 @@ export default function Settlement() {
                   className="space-y-6"
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="phoneNumber" className="text-sm font-medium text-foreground">
+                    <Label
+                      htmlFor="phoneNumber"
+                      className="text-sm font-medium text-foreground"
+                    >
                       Mobile Number <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
@@ -258,7 +278,11 @@ export default function Settlement() {
                         id="phoneNumber"
                         type="tel"
                         value={payoutPhoneNumber}
-                        onChange={(e) => setPayoutPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        onChange={(e) =>
+                          setPayoutPhoneNumber(
+                            e.target.value.replace(/\D/g, "").slice(0, 10)
+                          )
+                        }
                         placeholder="Enter Mobile Number"
                         className="h-12 border-2 border-border focus:border-primary transition-colors pr-10"
                         maxLength={10}
@@ -291,7 +315,7 @@ export default function Settlement() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background w-full">
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header walletBalance={0} />
@@ -337,13 +361,17 @@ export default function Settlement() {
                         <SelectItem value="50">50</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-sm text-white font-medium">entries</span>
+                    <span className="text-sm text-white font-medium">
+                      entries
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-white font-medium">Search:</span>
-                    <Input 
-                      className="w-56 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20" 
-                      placeholder="Search..." 
+                    <span className="text-sm text-white font-medium">
+                      Search:
+                    </span>
+                    <Input
+                      className="w-56 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20"
+                      placeholder="Search..."
                     />
                   </div>
                 </div>
@@ -354,14 +382,30 @@ export default function Settlement() {
                   <Table>
                     <TableHeader>
                       <TableRow className="paybazaar-gradient hover:opacity-95">
-                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">BENEFICIARY NAME</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">BANK NAME</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[140px] min-w-[140px]">IFSC</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">ACCOUNT NUMBER</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[150px] min-w-[150px]">MOBILE NUMBER</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">PAY</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[130px] min-w-[130px]">VERIFY</TableHead>
-                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">DELETE</TableHead>
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">
+                          BENEFICIARY NAME
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">
+                          BANK NAME
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[140px] min-w-[140px]">
+                          IFSC
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">
+                          ACCOUNT NUMBER
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[150px] min-w-[150px]">
+                          MOBILE NUMBER
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          PAY
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[130px] min-w-[130px]">
+                          VERIFY
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          DELETE
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -372,24 +416,38 @@ export default function Settlement() {
                               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
                                 <Eye className="h-10 w-10 text-muted-foreground" />
                               </div>
-                              <p className="text-lg font-semibold text-foreground mb-2">No beneficiaries found</p>
-                              <p className="text-sm text-muted-foreground">Click "+ Add Bene" to add a new beneficiary</p>
+                              <p className="text-lg font-semibold text-foreground mb-2">
+                                No beneficiaries found
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Click "+ Add Bene" to add a new beneficiary
+                              </p>
                             </div>
                           </TableCell>
                         </TableRow>
                       ) : (
                         beneficiaries.map((beneficiary, index) => (
-                          <TableRow 
+                          <TableRow
                             key={beneficiary.id}
                             className={`hover:bg-muted/50 transition-colors ${
                               index % 2 === 0 ? "bg-background" : "bg-muted/20"
                             }`}
                           >
-                            <TableCell className="text-center font-medium py-4">{beneficiary.beneficiaryName}</TableCell>
-                            <TableCell className="text-center py-4">{beneficiary.bankName}</TableCell>
-                            <TableCell className="text-center py-4 font-mono text-sm">{beneficiary.ifsc}</TableCell>
-                            <TableCell className="text-center py-4 font-mono text-sm">{beneficiary.accountNumber}</TableCell>
-                            <TableCell className="text-center py-4 font-mono">{beneficiary.mobileNumber}</TableCell>
+                            <TableCell className="text-center font-medium py-4">
+                              {beneficiary.beneficiaryName}
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              {beneficiary.bankName}
+                            </TableCell>
+                            <TableCell className="text-center py-4 font-mono text-sm">
+                              {beneficiary.ifsc}
+                            </TableCell>
+                            <TableCell className="text-center py-4 font-mono text-sm">
+                              {beneficiary.accountNumber}
+                            </TableCell>
+                            <TableCell className="text-center py-4 font-mono">
+                              {beneficiary.mobileNumber}
+                            </TableCell>
                             <TableCell className="text-center py-4">
                               <Button
                                 size="sm"
@@ -456,7 +514,9 @@ export default function Settlement() {
       <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">Payout Transaction</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              Payout Transaction
+            </DialogTitle>
             <DialogDescription>
               Complete the payout transaction details
             </DialogDescription>
@@ -468,24 +528,38 @@ export default function Settlement() {
               <div className="space-y-2 p-4 bg-muted rounded-lg">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Beneficiary Name:</span>
-                    <p className="font-medium">{selectedBeneficiary.beneficiaryName}</p>
+                    <span className="text-muted-foreground">
+                      Beneficiary Name:
+                    </span>
+                    <p className="font-medium">
+                      {selectedBeneficiary.beneficiaryName}
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Bank Name:</span>
-                    <p className="font-medium">{selectedBeneficiary.bankName}</p>
+                    <p className="font-medium">
+                      {selectedBeneficiary.bankName}
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">IFSC:</span>
                     <p className="font-medium">{selectedBeneficiary.ifsc}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Account Number:</span>
-                    <p className="font-medium">{selectedBeneficiary.accountNumber}</p>
+                    <span className="text-muted-foreground">
+                      Account Number:
+                    </span>
+                    <p className="font-medium">
+                      {selectedBeneficiary.accountNumber}
+                    </p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-muted-foreground">Mobile Number:</span>
-                    <p className="font-medium">{selectedBeneficiary.mobileNumber}</p>
+                    <span className="text-muted-foreground">
+                      Mobile Number:
+                    </span>
+                    <p className="font-medium">
+                      {selectedBeneficiary.mobileNumber}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -533,7 +607,10 @@ export default function Settlement() {
                   maxLength={4}
                   value={payFormData.mpin}
                   onChange={(e) =>
-                    setPayFormData({ ...payFormData, mpin: e.target.value.replace(/\D/g, "") })
+                    setPayFormData({
+                      ...payFormData,
+                      mpin: e.target.value.replace(/\D/g, ""),
+                    })
                   }
                   placeholder="Enter 4-digit MPIN"
                   className="text-center tracking-[0.5em]"
@@ -543,10 +620,7 @@ export default function Settlement() {
           )}
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowPayDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowPayDialog(false)}>
               Cancel
             </Button>
             <Button
@@ -561,4 +635,3 @@ export default function Settlement() {
     </div>
   );
 }
-

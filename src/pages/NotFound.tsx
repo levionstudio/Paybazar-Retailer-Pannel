@@ -28,7 +28,7 @@ const NotFound = () => {
               <div className="flex items-center justify-center mb-4">
                 <Clock className="h-24 w-24 text-primary/20 animate-pulse" />
               </div>
-              <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60 animate-fade-in leading-none">
+              <h1 className="text-6xl md:text-8xl pb-4 font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60 animate-fade-in leading-none">
                 Coming Soon
               </h1>
             </div>
@@ -44,13 +44,13 @@ const NotFound = () => {
                 </p>
               </div>
 
-              {/* Current path display */}
+              {/* Current path display
               <div className="bg-muted/50 backdrop-blur-sm border border-border rounded-lg p-4 mx-auto max-w-md">
                 <p className="text-sm text-muted-foreground mb-1">Page:</p>
                 <code className="text-primary text-sm font-mono bg-background px-2 py-1 rounded">
                   {location.pathname}
                 </code>
-              </div>
+              </div> */}
 
               {/* Action buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
