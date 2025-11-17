@@ -517,7 +517,7 @@ export default function Settlement() {
         amount: payFormData.amount,
         transfer_type: payFormData.transactionType,
         remarks: "",
-        commission: (parseFloat(payFormData.amount) * 0.01).toFixed(2),
+        commission: (parseFloat(payFormData.amount) * 0.012).toFixed(2),
         mpin: verifiedMpin,
       };
 

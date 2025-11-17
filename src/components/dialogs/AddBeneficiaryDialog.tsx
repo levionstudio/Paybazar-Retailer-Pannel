@@ -31,7 +31,6 @@ interface BeneficiaryFormData {
   ifsc: string;
   accountNumber: string;
   beneficiaryName: string;
-  mobileNumber: string;
 }
 
 interface Bank {
@@ -51,7 +50,6 @@ export function AddBeneficiaryDialog({
     ifsc: "",
     accountNumber: "",
     beneficiaryName: "",
-    mobileNumber: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -105,7 +103,6 @@ export function AddBeneficiaryDialog({
         ifsc: "",
         accountNumber: "",
         beneficiaryName: "",
-        mobileNumber: "",
       });
       setErrors({});
       setSelectedBankIFSC("");
@@ -133,11 +130,6 @@ export function AddBeneficiaryDialog({
     }
     if (!formData.beneficiaryName)
       newErrors.beneficiaryName = "Beneficiary name is required";
-    if (!formData.mobileNumber)
-      newErrors.mobileNumber = "Mobile number is required";
-    if (formData.mobileNumber && !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
-      newErrors.mobileNumber = "Invalid mobile number";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -224,6 +216,15 @@ export function AddBeneficiaryDialog({
 
     if (!validateForm()) return;
 
+    if (!mobileNumber) {
+      toast({
+        title: "Missing Phone Number",
+        description: "Remitter phone number not found. Please login again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const token = localStorage.getItem("authToken");
@@ -234,7 +235,7 @@ export function AddBeneficiaryDialog({
         ifsc_code: formData.ifsc,
         account_number: formData.accountNumber,
         beneficiary_name: formData.beneficiaryName,
-        beneficiary_phone: formData.mobileNumber, // Beneficiary's phone number (user enters this)
+        beneficiary_phone: mobileNumber, // Use remitter's phone number for beneficiary
       };
 
       const response = await axios.post(
@@ -264,7 +265,6 @@ export function AddBeneficiaryDialog({
           ifsc: "",
           accountNumber: "",
           beneficiaryName: "",
-          mobileNumber: "",
         });
         setErrors({});
         setSelectedBankIFSC("");
@@ -287,7 +287,6 @@ export function AddBeneficiaryDialog({
       ifsc: "",
       accountNumber: "",
       beneficiaryName: "",
-      mobileNumber: "",
     });
     setErrors({});
     setSelectedBankIFSC("");
@@ -436,26 +435,6 @@ export function AddBeneficiaryDialog({
             />
             {errors.beneficiaryName && (
               <p className="text-red-500 text-xs">{errors.beneficiaryName}</p>
-            )}
-          </div>
-
-          {/* Beneficiary Phone Number */}
-          <div className="space-y-2">
-            <Label htmlFor="mobileNumber" className="text-sm font-medium">
-              Beneficiary Phone Number
-            </Label>
-            <Input
-              id="mobileNumber"
-              type="text"
-              value={formData.mobileNumber}
-              onChange={(e) =>
-                setFormData({ ...formData, mobileNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })
-              }
-              placeholder="Enter Beneficiary Phone Number"
-              maxLength={10}
-            />
-            {errors.mobileNumber && (
-              <p className="text-red-500 text-xs">{errors.mobileNumber}</p>
             )}
           </div>
 
