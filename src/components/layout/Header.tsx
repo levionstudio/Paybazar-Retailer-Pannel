@@ -1,15 +1,17 @@
-import { Moon, Sun, Bell, User, Wallet } from "lucide-react";
+import { Moon, Sun, LogOut, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ui/theme-provider";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
@@ -26,6 +28,7 @@ interface JWTPayload {
 export function Header({ walletBalance }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [walletBalances, setWalletBalance] = useState(0);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const getAdminId = (): string | null => {
     try {
@@ -85,29 +88,41 @@ export function Header({ walletBalance }: HeaderProps) {
             </span>
           </div>
 
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => {
-                  localStorage.removeItem("authToken");
-                  window.location.href = "/login";
-                }}
-              >
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Logout Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowLogoutDialog(true)}
+            title="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to logout?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                localStorage.removeItem("authToken");
+                window.location.href = "/login";
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

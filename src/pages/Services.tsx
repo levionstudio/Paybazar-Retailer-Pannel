@@ -21,7 +21,21 @@ export default function Services() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const services = [
+
     {
+      id: "payout",
+      title: "PAYOUT",
+      subtitle: "Instant Settlement",
+      icon: Landmark,
+      status: "active",
+      description: "Send settlement instantly to bank",
+      commission: "Flat ₹5",
+      color: "bg-gradient-to-r from-purple-600 to-purple-400",
+      category: "Settlement",
+      route: "/settlement",
+    },
+    {
+      
       id: "aeps1",
       title: "AEPS",
       subtitle: "Aadhaar Enabled Payment",
@@ -105,18 +119,7 @@ export default function Services() {
       category: "Recharge",
       route: "/mobile-recharge",
     },
-    {
-      id: "payout",
-      title: "PAYOUT",
-      subtitle: "Instant Settlement",
-      icon: Landmark,
-      status: "active",
-      description: "Send settlement instantly to bank",
-      commission: "Flat ₹5",
-      color: "bg-gradient-to-r from-purple-600 to-purple-400",
-      category: "Settlement",
-      route: "/settlement",
-    },
+  
   ];
 
   const categories = ["All", ...Array.from(new Set(services.map((s) => s.category)))];
