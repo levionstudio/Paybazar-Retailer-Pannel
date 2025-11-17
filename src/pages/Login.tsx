@@ -10,11 +10,25 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
-import { CreditCard, Clock, Headphones, Building2, Mail, Phone, MapPin } from "lucide-react";
+import {
+  CreditCard,
+  Clock,
+  Headphones,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 
 const phoneSchema = z.object({
   phone: z
@@ -97,7 +111,8 @@ export default function Login() {
     if (!phone) {
       toast({
         title: "Error",
-        description: "Phone number not found. Please go back and enter your phone number.",
+        description:
+          "Phone number not found. Please go back and enter your phone number.",
         variant: "destructive",
       });
       return;
@@ -191,7 +206,7 @@ export default function Login() {
             </li>
           </ul>
 
-          <Card className="w-full shadow-xl border-0 rounded-2xl bg-white backdrop-blur-lg border border-white/20">
+          <Card className="w-full shadow-xl border-0 rounded-2xl bg-white backdrop-blur-lg  border-white/20">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-[#0d3154] flex items-center gap-3">
                 <Building2 className="w-6 h-6 text-[#0d3154]" /> Company Info
@@ -204,9 +219,11 @@ export default function Login() {
               <p className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#0d3154]" /> +91 9319187762
               </p>
-              <p className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-[#0d3154] mt-1" /> Paybazaar
-                Technologies Pvt Ltd, Office No-304, Plot 2, Delhi
+              <p className="flex  gap-3 items-center">
+                <MapPin className="w-5 h-5 text-[#0d3154] mt-1" />
+                <p className="">
+                  Paybazaar Technologies Pvt Ltd, Office No-304, Plot 2, Delhi
+                </p>
               </p>
             </CardContent>
           </Card>
@@ -244,7 +261,10 @@ export default function Login() {
 
             <CardContent>
               {step === "phone" ? (
-                <form onSubmit={handleSubmitPhone(onSendOtp)} className="space-y-8">
+                <form
+                  onSubmit={handleSubmitPhone(onSendOtp)}
+                  className="space-y-8"
+                >
                   <div className="space-y-3">
                     <Label
                       htmlFor="phone"
@@ -261,7 +281,9 @@ export default function Login() {
                       disabled={isLoading}
                     />
                     {phoneErrors.phone && (
-                      <p className="text-sm text-destructive">{phoneErrors.phone.message}</p>
+                      <p className="text-sm text-destructive">
+                        {phoneErrors.phone.message}
+                      </p>
                     )}
                   </div>
 
@@ -274,7 +296,10 @@ export default function Login() {
                   </Button>
                 </form>
               ) : (
-                <form onSubmit={handleSubmitOtp(onVerifyOtp)} className="space-y-8">
+                <form
+                  onSubmit={handleSubmitOtp(onVerifyOtp)}
+                  className="space-y-8"
+                >
                   <div className="space-y-3">
                     <Label
                       htmlFor="otp"
@@ -294,7 +319,9 @@ export default function Login() {
                       disabled={isLoading}
                     />
                     {otpErrors.otp && (
-                      <p className="text-sm text-destructive">{otpErrors.otp.message}</p>
+                      <p className="text-sm text-destructive">
+                        {otpErrors.otp.message}
+                      </p>
                     )}
                   </div>
 
@@ -308,7 +335,9 @@ export default function Login() {
                     </Button>
 
                     <div className="flex items-center justify-center gap-2">
-                      <p className="text-sm text-slate-600">Didn't receive OTP?</p>
+                      <p className="text-sm text-slate-600">
+                        Didn't receive OTP?
+                      </p>
                       <Button
                         type="button"
                         variant="link"
