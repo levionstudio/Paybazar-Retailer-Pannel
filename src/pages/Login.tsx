@@ -219,12 +219,13 @@ export default function Login() {
               <p className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#0d3154]" /> +91 9319187762
               </p>
-              <p className="flex  gap-3 items-center">
+              <div className="flex items-start ">
                 <MapPin className="w-5 h-5 text-[#0d3154] mt-1" />
-                <p className="">
-                  Paybazaar Technologies Pvt Ltd, Office No-304, Plot 2, Delhi
-                </p>
-              </p>
+                <span className="text-xs text-slate-700 leading-relaxed">
+                  Unit 902, Tower B4 on 9th Spaze I-Tech Park, Sector-49, Sohna
+                  Road, Gurugram, Haryana, 122018.
+                </span>
+              </div>
             </CardContent>
           </Card>
         </div>
