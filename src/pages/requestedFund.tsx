@@ -48,6 +48,7 @@ interface GetFundRequestModel {
   date?: string;
   remarks: string;
   request_status: string;
+  request_date: string;
 }
 
 const GetFundRequests = () => {
@@ -279,7 +280,7 @@ const GetFundRequests = () => {
                             paginatedRequests.map((req) => (
                               <TableRow key={req.request_id}>
                                 <TableCell className="text-center whitespace-nowrap">
-                                  {req.request_unique_id || req.request_id}
+                                  {req.requester_unique_id }
                                 </TableCell>
                                 <TableCell className="font-medium text-center whitespace-nowrap">
                                   {req.requester_name}
@@ -295,7 +296,7 @@ const GetFundRequests = () => {
                                   {req.utr_number || "N/A"}
                                 </TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
-                                  {(req as any).date || "N/A"}
+                                  {req.request_date}
                                 </TableCell>
                                 <TableCell className="text-center max-w-xs truncate">
                                   {req.remarks || "N/A"}

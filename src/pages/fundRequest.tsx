@@ -42,24 +42,19 @@ interface Bank {
   ifsc_code: string;
 }
 
-
 const RequestFunds = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     bank_name: "",
-    account_number: "",
-    ifsc_code: "",
-    bank_branch: "",
     utr_number: "",
     amount: "",
     remarks: "",
+    deposite_date: "",
   });
 
-  const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetchingBanks, setFetchingBanks] = useState(false);
   const [walletBalance] = useState(50000);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -98,60 +93,6 @@ const RequestFunds = () => {
     },
     [navigate]
   );
-
-  // Fetch banks from API
-  useEffect(() => {
-    const fetchBanks = async () => {
-      try {
-        setFetchingBanks(true);
-        const token = localStorage.getItem("authToken");
-        
-        if (!token) {
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to continue.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/user/get/banks`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.data.status === "success" && response.data.data?.banks) {
-          setBanks(response.data.data.banks);
-          toast({
-            title: "Success",
-            description: "Banks loaded successfully.",
-          });
-        } else {
-          toast({
-            title: "Warning",
-            description: "No banks available. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      } catch (error: any) {
-        console.error("Error fetching banks:", error);
-        toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to fetch banks. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setFetchingBanks(false);
-      }
-    };
-
-    fetchBanks();
-  }, [toast]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -209,86 +150,14 @@ const RequestFunds = () => {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleBankChange = (bankName: string) => {
-    const selectedBank = banks.find((b) => b.bank_name === bankName);
-    if (selectedBank) {
-      // Get prefix - first 4 letters of IFSC code
-      const ifscPrefix = selectedBank.ifsc_code.substring(0, 4);
-      setFormData((prev) => ({
-        ...prev,
-        bank_name: bankName,
-        ifsc_code: ifscPrefix, // Auto-fill IFSC prefix when bank is selected
-      }));
-      toast({
-        title: "Bank Selected",
-        description: `${bankName} selected. IFSC prefix auto-filled.`,
-      });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        bank_name: bankName,
-      }));
-    }
-  };
-
-  const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    
-    // If bank is selected, ensure IFSC starts with bank's prefix
-    if (formData.bank_name) {
-      const selectedBank = banks.find((b) => b.bank_name === formData.bank_name);
-      if (selectedBank) {
-        const prefix = selectedBank.ifsc_code.substring(0, 4);
-        
-        // If user is typing and value doesn't start with prefix, prepend it
-        if (value.length > 0 && !value.startsWith(prefix)) {
-          // If user deleted prefix, restore it
-          if (value.length < prefix.length) {
-            value = prefix;
-          } else {
-            // Keep prefix and append remaining characters
-            value = prefix + value.substring(prefix.length);
-          }
-        }
-        
-        // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
-        if (value.length > 11) {
-          value = value.substring(0, 11);
-        }
-      } else {
-        // No bank found, just limit to 11 characters
-        if (value.length > 11) {
-          value = value.substring(0, 11);
-        }
-      }
-    } else {
-      // No bank selected, just limit to 11 characters
-      if (value.length > 11) {
-        value = value.substring(0, 11);
-      }
-    }
-    
-    setFormData((prev) => ({ ...prev, ifsc_code: value }));
-  };
-
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
     if (!formData.bank_name) {
       errors.bank_name = "Please select a bank";
     }
-    if (!formData.ifsc_code) {
-      errors.ifsc_code = "IFSC code is required";
-    } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifsc_code)) {
-      errors.ifsc_code = "Invalid IFSC code format (e.g., SBIN0001234)";
-    }
-    if (!formData.account_number) {
-      errors.account_number = "Account number is required";
-    } else if (formData.account_number.length < 9) {
-      errors.account_number = "Account number must be at least 9 digits";
-    }
-    if (!formData.bank_branch) {
-      errors.bank_branch = "Bank branch is required";
+    if (!formData.deposite_date) {
+      errors.deposite_date = "Deposite date is required";
     }
     if (!formData.utr_number) {
       errors.utr_number = "UTR number is required";
@@ -319,7 +188,7 @@ const RequestFunds = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!tokenData) {
       toast({
         title: "Authentication Error",
@@ -352,19 +221,17 @@ const RequestFunds = () => {
       requester_id: tokenData.data.user_id,
       requester_unique_id: tokenData.data.user_unique_id,
       requester_name: tokenData.data.user_name,
-      requster_type: "USER",
+      requester_type: "USER",
       amount: formData.amount,
       bank_name: formData.bank_name,
-      account_number: formData.account_number,
-      ifsc_code: formData.ifsc_code,
-      bank_branch: formData.bank_branch,
+      request_date: formData.deposite_date,
       utr_number: formData.utr_number,
       remarks: formData.remarks,
     };
 
     try {
       setLoading(true);
-
+      console.log(payload);
       toast({
         title: "Submitting Request",
         description: "Please wait while we process your fund request...",
@@ -384,18 +251,18 @@ const RequestFunds = () => {
       if (data.status === "success") {
         toast({
           title: "Success",
-          description: data.message || "Fund request submitted successfully. We will process it shortly.",
+          description:
+            data.message ||
+            "Fund request submitted successfully. We will process it shortly.",
         });
 
         // Reset form
         setFormData({
           bank_name: "",
-          account_number: "",
-          ifsc_code: "",
-          bank_branch: "",
           utr_number: "",
           amount: "",
           remarks: "",
+          deposite_date: "",
         });
 
         setTimeout(() => {
@@ -408,18 +275,21 @@ const RequestFunds = () => {
       } else {
         toast({
           title: "Request Failed",
-          description: data.message || "Failed to submit fund request. Please try again.",
+          description:
+            data.message || "Failed to submit fund request. Please try again.",
           variant: "destructive",
         });
       }
     } catch (err: any) {
       console.error("Fund request error:", err);
-      
+
       let errorMessage = "Something went wrong. Please try again.";
-      
+
       if (err.response) {
         if (err.response.status === 400) {
-          errorMessage = err.response.data?.message || "Invalid request data. Please check all fields.";
+          errorMessage =
+            err.response.data?.message ||
+            "Invalid request data. Please check all fields.";
         } else if (err.response.status === 401) {
           errorMessage = "Session expired. Please log in again.";
           setTimeout(() => redirectTo("/login"), 2000);
@@ -446,9 +316,7 @@ const RequestFunds = () => {
 
   // Helper to format labels nicely
   const formatLabel = (key: string) =>
-    key
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 
   return (
     <div className="flex min-h-screen w-full bg-background relative">
@@ -472,7 +340,8 @@ const RequestFunds = () => {
                     Transfer Funds to Paybazaar Account
                   </CardTitle>
                   <CardDescription>
-                    Please transfer the amount to one of the following bank accounts
+                    Please transfer the amount to one of the following bank
+                    accounts
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -536,11 +405,7 @@ const RequestFunds = () => {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  copyToClipboard(
-                                    bank.ifscCode,
-                                    "ifsc",
-                                    index
-                                  )
+                                  copyToClipboard(bank.ifscCode, "ifsc", index)
                                 }
                                 className="p-1 hover:bg-muted rounded transition-colors"
                                 title="Copy IFSC Code"
@@ -559,9 +424,9 @@ const RequestFunds = () => {
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <p className="text-sm text-blue-900 dark:text-blue-100">
-                      <strong>Note:</strong> After transferring funds, please fill
-                      the form below with your transaction details (UTR number,
-                      amount, etc.) to complete the fund request.
+                      <strong>Note:</strong> After transferring funds, please
+                      fill the form below with your transaction details (UTR
+                      number, amount, etc.) to complete the fund request.
                     </p>
                   </div>
                 </CardContent>
@@ -591,83 +456,43 @@ const RequestFunds = () => {
                     aria-label="Fund request form"
                   >
                     <div className="grid grid-cols-2 gap-6">
-                      {/* Bank Name */}
                       <div className="space-y-2">
-                        <Label htmlFor="bank_name" className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          Select Bank <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                          value={formData.bank_name}
-                          onValueChange={handleBankChange}
-                          required
-                          disabled={fetchingBanks}
+                        <Label
+                          htmlFor="ifsc_code"
+                          className="text-sm font-semibold text-foreground flex items-center gap-1"
                         >
-                          <SelectTrigger className="h-12 border-2 border-border focus:border-primary transition-colors bg-background hover:bg-muted/50">
-                            <SelectValue placeholder={fetchingBanks ? "Loading banks..." : "--Select Bank--"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {fetchingBanks ? (
-                              <SelectItem value="loading" disabled>Loading banks...</SelectItem>
-                            ) : banks.length === 0 ? (
-                              <SelectItem value="no-banks" disabled>No banks available</SelectItem>
-                            ) : (
-                              banks.map((bank) => (
-                                <SelectItem key={bank.bank_name} value={bank.bank_name}>
-                                  {bank.bank_name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* IFSC Code */}
-                      <div className="space-y-2">
-                        <Label htmlFor="ifsc_code" className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          IFSC Code <span className="text-destructive">*</span>
+                          Bank Name <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          id="ifsc_code"
+                          id="bank_name"
                           type="text"
-                          value={formData.ifsc_code}
-                          onChange={handleIFSCChange}
+                          value={formData.bank_name}
+                          onChange={handleChange}
                           className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
-                          placeholder="Enter IFSC Code"
+                          placeholder="Enter Bank Name"
                           maxLength={11}
                           required
                           aria-required="true"
                         />
                       </div>
 
-                      {/* Account Number */}
+                      {/* Deposite Date */}
                       <div className="space-y-2">
-                        <Label htmlFor="account_number" className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          Account Number <span className="text-destructive">*</span>
+                        <Label
+                          htmlFor="ifsc_code"
+                          className="text-sm font-semibold text-foreground flex items-center gap-1"
+                        >
+                          Deposite Date{" "}
+                          <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          id="account_number"
-                          type="text"
-                          value={formData.account_number}
+                          id="deposite_date"
+                          type="date"
+                          value={formData.deposite_date}
                           onChange={handleChange}
-                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
-                          placeholder="Enter Account Number"
-                          required
-                          aria-required="true"
-                        />
-                      </div>
-
-                      {/* Bank Branch */}
-                      <div className="space-y-2">
-                        <Label htmlFor="bank_branch" className="text-sm font-semibold text-foreground flex items-center gap-1">
-                          Bank Branch <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="bank_branch"
-                          type="text"
-                          value={formData.bank_branch}
-                          onChange={handleChange}
-                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
-                          placeholder="Enter Bank Branch"
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
+                          placeholder="Enter Deposited Date"
+                          maxLength={11}
                           required
                           aria-required="true"
                         />
@@ -675,7 +500,10 @@ const RequestFunds = () => {
 
                       {/* UTR Number */}
                       <div className="space-y-2">
-                        <Label htmlFor="utr_number" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                        <Label
+                          htmlFor="utr_number"
+                          className="text-sm font-semibold text-foreground flex items-center gap-1"
+                        >
                           UTR Number <span className="text-destructive">*</span>
                         </Label>
                         <Input
@@ -692,7 +520,10 @@ const RequestFunds = () => {
 
                       {/* Amount */}
                       <div className="space-y-2">
-                        <Label htmlFor="amount" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                        <Label
+                          htmlFor="amount"
+                          className="text-sm font-semibold text-foreground flex items-center gap-1"
+                        >
                           Amount <span className="text-destructive">*</span>
                         </Label>
                         <Input
@@ -712,7 +543,10 @@ const RequestFunds = () => {
 
                     {/* Remarks */}
                     <div className="space-y-2">
-                      <Label htmlFor="remarks" className="text-sm font-semibold text-foreground flex items-center gap-1">
+                      <Label
+                        htmlFor="remarks"
+                        className="text-sm font-semibold text-foreground flex items-center gap-1"
+                      >
                         Remarks <span className="text-destructive">*</span>
                       </Label>
                       <Textarea
