@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { CheckCircle2 } from "lucide-react";
 
 interface AddBeneficiaryDialogProps {
   open: boolean;
@@ -57,6 +58,8 @@ export function AddBeneficiaryDialog({
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedBankIFSC, setSelectedBankIFSC] = useState("");
+  const [isAccountVerified, setIsAccountVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Fetch banks from API
   useEffect(() => {
@@ -106,8 +109,14 @@ export function AddBeneficiaryDialog({
       });
       setErrors({});
       setSelectedBankIFSC("");
+      setIsAccountVerified(false);
     }
   }, [open]);
+
+  // Reset verification when account number or IFSC changes
+  useEffect(() => {
+    setIsAccountVerified(false);
+  }, [formData.accountNumber, formData.ifsc]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -134,18 +143,80 @@ export function AddBeneficiaryDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleVerifyAccount = () => {
+  const handleVerifyAccount = async () => {
     if (!formData.ifsc || !formData.accountNumber) {
       setErrors({
         ...errors,
         verify: "Please enter IFSC and Account Number first",
       });
+      setIsAccountVerified(false);
       return;
     }
 
-    // Simulate account verification
-    setErrors({ ...errors, verify: "" });
-    alert("Account verified successfully!");
+    // Validate IFSC format
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifsc)) {
+      setErrors({
+        ...errors,
+        verify: "Invalid IFSC code format",
+      });
+      setIsAccountVerified(false);
+      return;
+    }
+
+    // Validate account number length
+    if (formData.accountNumber.length < 9) {
+      setErrors({
+        ...errors,
+        verify: "Account number must be at least 9 digits",
+      });
+      setIsAccountVerified(false);
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      setErrors({ ...errors, verify: "" });
+      
+      // TODO: Replace with actual API endpoint when available
+      // Example API call:
+      // const token = localStorage.getItem("authToken");
+      // const response = await axios.post(
+      //   `${import.meta.env.VITE_API_BASE_URL}/user/verify/account`,
+      //   {
+      //     ifsc_code: formData.ifsc,
+      //     account_number: formData.accountNumber,
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "Content-Type": "application/json",
+      //     },
+      //   }
+      // );
+      
+      // For now, simulate successful verification after a short delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsAccountVerified(true);
+      setErrors({ ...errors, verify: "" });
+      toast({
+        title: "Account Verified",
+        description: "Account number has been verified successfully",
+      });
+    } catch (error: any) {
+      setIsAccountVerified(false);
+      setErrors({
+        ...errors,
+        verify: error.response?.data?.message || "Failed to verify account. Please try again.",
+      });
+      toast({
+        title: "Verification Failed",
+        description: error.response?.data?.message || "Failed to verify account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,13 +297,12 @@ export function AddBeneficiaryDialog({
   const handleBankChange = (bankName: string) => {
     const selectedBank = banks.find((b) => b.bank_name === bankName);
     if (selectedBank) {
-      // Get prefix - first 3 or 4 letters (whichever is available, typically 4)
-      const ifscPrefix = selectedBank.ifsc_code.substring(0, 4);
+      // Use complete IFSC code from API
       setSelectedBankIFSC(selectedBank.ifsc_code);
       setFormData({
         ...formData,
         bank: bankName,
-        ifsc: ifscPrefix, // Auto-fill with prefix
+        ifsc: selectedBank.ifsc_code, // Auto-fill with complete IFSC code
       });
     }
   };
@@ -240,36 +310,16 @@ export function AddBeneficiaryDialog({
   const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     
-    // If bank is selected, ensure IFSC starts with bank's prefix (first 3-4 letters)
-    if (selectedBankIFSC) {
-      // Get the prefix from the selected bank's IFSC (first 3-4 letters)
-      const prefix = selectedBankIFSC.substring(0, 4);
-      
-      // If user is typing and value doesn't start with prefix, enforce prefix
-      if (value.length > 0) {
-        if (!value.startsWith(prefix)) {
-          // If user deleted prefix, restore it
-          if (value.length < prefix.length) {
-            value = prefix;
-          } else {
-            // Keep prefix and append remaining characters
-            value = prefix + value.substring(prefix.length);
-          }
-        }
-      }
-      
-      // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
-      if (value.length > 11) {
-        value = value.substring(0, 11);
-      }
-    } else {
-      // No bank selected, just limit to 11 characters
-      if (value.length > 11) {
-        value = value.substring(0, 11);
-      }
+    // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
+    if (value.length > 11) {
+      value = value.substring(0, 11);
     }
     
     setFormData({ ...formData, ifsc: value });
+    // Clear selected bank IFSC if user manually edits the IFSC
+    if (selectedBankIFSC && value !== selectedBankIFSC) {
+      setSelectedBankIFSC("");
+    }
   };
 
   return (
@@ -335,7 +385,7 @@ export function AddBeneficiaryDialog({
               <Label htmlFor="accountNumber" className="text-sm font-medium">
                 Account Number
               </Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Input
                   id="accountNumber"
                   type="text"
@@ -349,9 +399,10 @@ export function AddBeneficiaryDialog({
                 <Button
                   type="button"
                   onClick={handleVerifyAccount}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap"
+                  disabled={isVerifying}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap disabled:opacity-50"
                 >
-                  Verify A/C
+                  {isVerifying ? "Verifying..." : "Verify A/C"}
                 </Button>
               </div>
               {errors.accountNumber && (
@@ -359,6 +410,12 @@ export function AddBeneficiaryDialog({
               )}
               {errors.verify && (
                 <p className="text-red-500 text-xs">{errors.verify}</p>
+              )}
+              {isAccountVerified && !errors.verify && (
+                <p className="text-green-600 text-xs flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Account verified successfully
+                </p>
               )}
             </div>
           </div>

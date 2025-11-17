@@ -258,12 +258,45 @@ export default function Settlement() {
     }
   };
 
-  const handleDelete = (beneficiaryId: string) => {
-    setBeneficiaries(beneficiaries.filter((b) => b.beneficiary_id !== beneficiaryId));
-    toast({
-      title: "Success",
-      description: "Beneficiary deleted successfully",
-    });
+  const handleDelete = async (beneficiaryId: string) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/user/delete/beneficiary/${beneficiaryId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Check if deletion is successful (204 No Content or 200 OK)
+      // 204 responses typically have no body, so we check status code
+      if (response.status === 204 || response.status === 200 || response.data?.status === "success") {
+        // Refresh beneficiaries list
+        if (payoutPhoneNumber) {
+          await fetchBeneficiaries(payoutPhoneNumber);
+        }
+        toast({
+          title: "Success",
+          description: "Beneficiary deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.data?.message || "Failed to delete beneficiary. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete beneficiary. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePayClick = (beneficiary: Beneficiary) => {
