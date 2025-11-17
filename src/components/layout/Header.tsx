@@ -27,6 +27,15 @@ export function Header({ walletBalance }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [walletBalances, setWalletBalance] = useState(0);
 
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.href = "/login";
+      toast("Authentication token not found");
+    };
+   
+  }, []);
+
   const getAdminId = (): string | null => {
     try {
       const token = localStorage.getItem("authToken");
