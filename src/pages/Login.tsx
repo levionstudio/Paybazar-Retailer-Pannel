@@ -180,7 +180,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 md:grid-cols-2">
+    <div className="min-h-screen w-full grid grid-cols-1 md:grid-cols-2 relative">
       {/* LEFT SIDE */}
       <div className="hidden md:flex flex-col justify-center items-center bg-[#0d3154] px-12 py-16 text-white gap-8">
         <div className="flex flex-col items-center max-w-lg text-center space-y-6">
@@ -354,6 +354,14 @@ export default function Login() {
               )}
             </CardContent>
           </Card>
+
+          {/* Footer Credit */}
+          <div className="text-center mt-8">
+            <p className="text-xs text-slate-500">
+              Designed and developed by{" "}
+              <span className="font-semibold text-slate-700">GV Infotech</span>
+            </p>
+          </div>
         </div>
       </div>
 
