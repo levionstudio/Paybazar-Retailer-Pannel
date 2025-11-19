@@ -26,6 +26,7 @@ import GetFundRequests from "./pages/requestedFund";
 import UserWalletTransactions from "./pages/transactionUsers";
 import PayoutRequest from "./pages/payout";
 import Settlement from "./pages/settlement";
+import UserPayouts from "./pages/UserPayouts";
 import { Settings } from "lucide-react";
 import ChangePasswordMpin from "./pages/settings";
 
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/transactions" element={<UserWalletTransactions />} />
               <Route path="/payout" element={<PayoutRequest />} />
               <Route path="/settlement" element={<Settlement />} />
+              <Route path="/reports" element={<UserPayouts />} />
               <Route path="/settings" element={<ChangePasswordMpin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

@@ -52,6 +52,7 @@ const historyMenu = [
 ];
 
 const bottomMenu = [
+  { title: "Reports", href: "/reports", icon: FileText },
   { title: "Commission", href: "/commission", icon: Receipt },
   { title: "Documents", href: "/documents", icon: FileText },
   { title: "Contact Us", href: "/contact-us", icon: HelpCircle },
