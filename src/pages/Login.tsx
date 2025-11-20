@@ -28,6 +28,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Link,
 } from "lucide-react";
 
 const phoneSchema = z.object({
@@ -359,7 +360,7 @@ export default function Login() {
           <div className="text-center mt-8">
             <p className="text-xs text-slate-500">
               Designed and developed by{" "}
-              <span className="font-semibold text-slate-700">GV Infotech</span>
+              <a href="https://gvinfotech.org/" target="_blank"  className="font-semibold text-slate-700">GV Infotech</a>
             </p>
           </div>
         </div>
