@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -15,7 +21,8 @@ import {
 } from "@/components/ui/table";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface TokenData {
   data: {
@@ -43,14 +50,17 @@ interface Transaction {
 
 const UserWalletTransactions = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
 
-  // ✅ Decode token
+  // Decode token
   useEffect(() => {
     const token = localStorage.getItem("authToken");
 
@@ -89,7 +99,7 @@ const UserWalletTransactions = () => {
     }
   }, []);
 
-  // ✅ Fetch wallet transactions
+  // Fetch wallet transactions
   const fetchTransactions = async () => {
     if (!tokenData) return;
 
@@ -107,12 +117,14 @@ const UserWalletTransactions = () => {
       );
 
       if (res.data.status === "success") {
+        setAllTransactions(res.data.data || []);
         setTransactions(res.data.data || []);
         toast({
           title: "Success",
           description: "Transactions loaded successfully",
         });
       } else {
+        setAllTransactions([]);
         setTransactions([]);
       }
     } catch (error) {
@@ -122,6 +134,7 @@ const UserWalletTransactions = () => {
         description: "Unable to fetch transactions",
         variant: "destructive",
       });
+      setAllTransactions([]);
       setTransactions([]);
     } finally {
       setLoading(false);
@@ -132,202 +145,298 @@ const UserWalletTransactions = () => {
     if (tokenData) fetchTransactions();
   }, [tokenData]);
 
-  const getTransactionTypeBadge = (type: string) => {
-    return type === "DEBIT" ? (
-      <Badge
-        variant="outline"
-        className="bg-red-50 text-red-700 border-red-300"
-      >
-        Debit
-      </Badge>
-    ) : (
-      <Badge
-        variant="outline"
-        className="bg-green-50 text-green-700 border-green-300"
-      >
-        Credit
-      </Badge>
-    );
+  // Search Filter
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setTransactions(allTransactions);
+      setCurrentPage(1);
+      return;
+    }
+
+    const searchLower = searchTerm.toLowerCase().trim();
+    const filtered = allTransactions.filter((transaction) => {
+      const searchableFields = [
+        transaction.transaction_id,
+        transaction.transactor_name,
+        transaction.transactor_type,
+        transaction.receiver_name,
+        transaction.receiver_type,
+        transaction.transaction_type,
+        transaction.amount,
+        transaction.transaction_status,
+        transaction.remarks,
+      ];
+
+      return searchableFields.some((field) =>
+        String(field).toLowerCase().includes(searchLower)
+      );
+    });
+
+    setTransactions(filtered);
+    setCurrentPage(1);
+  }, [searchTerm, allTransactions]);
+
+  const getTransactionTypeColor = (type: string) => {
+    return type === "DEBIT"
+      ? "bg-red-600 text-white"
+      : "bg-green-600 text-white";
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === "SUCCESS" ? (
-      <Badge
-        variant="outline"
-        className="bg-green-50 text-green-700 border-green-300"
-      >
-        Success
-      </Badge>
-    ) : (
-      <Badge
-        variant="outline"
-        className="bg-yellow-50 text-yellow-700 border-yellow-300"
-      >
-        Pending
-      </Badge>
-    );
+  const getStatusColor = (status: string) => {
+    return status === "SUCCESS"
+      ? "bg-green-600 text-white"
+      : "bg-yellow-600 text-white";
   };
 
-  const totalPages = Math.ceil(transactions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  // Pagination
+  const totalPages = Math.ceil(transactions.length / entriesPerPage);
+  const startIndex = (currentPage - 1) * entriesPerPage;
+  const endIndex = startIndex + entriesPerPage;
   const paginatedTransactions = transactions.slice(startIndex, endIndex);
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen bg-background w-full">
       <AppSidebar />
-
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
+        <Header walletBalance={0} />
 
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="space-y-6">
+        <main className="flex-1 overflow-auto bg-muted/20">
+          {/* Header Section */}
+          <div className="paybazaar-gradient text-white p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  Wallet Transactions
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  View your wallet transaction history
-                </p>
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(-1)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold">Wallet Transactions</h1>
+                  <p className="text-white/80 text-sm mt-1">
+                    View your wallet transaction history
+                  </p>
+                </div>
               </div>
-              <Button onClick={fetchTransactions} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button
+                onClick={fetchTransactions}
+                className="bg-white text-primary hover:bg-white/90"
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
+          </div>
 
-            <Card>
-              <CardContent className="p-0">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          {/* Table Section */}
+          <div className="p-6">
+            <div className="bg-card rounded-lg border border-border shadow-lg overflow-hidden">
+              <div className="paybazaar-gradient p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white font-medium">Show</span>
+                    <Select
+                      value={entriesPerPage.toString()}
+                      onValueChange={(value) => {
+                        setEntriesPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20">
+                        <SelectValue className="text-white" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-white font-medium">
+                      entries
+                    </span>
+                    <span className="text-sm text-white/80 ml-2">
+                      (Showing {transactions.length} of {allTransactions.length})
+                    </span>
                   </div>
-                ) : (
-                  <div>
-                    <div className="max-h-[600px]  overflow-y-auto ">
-                      <Table className="w-full">
-                        <TableHeader className="sticky top-0 bg-background z-10">
-                          <TableRow>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Transactor
-                            </TableHead>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Receiver
-                            </TableHead>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Type
-                            </TableHead>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Amount
-                            </TableHead>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Status
-                            </TableHead>
-                            <TableHead className="text-center whitespace-nowrap">
-                              Remarks
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedTransactions.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={6}
-                                className="text-center text-muted-foreground py-8"
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white font-medium">
+                      Search:
+                    </span>
+                    <Input
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-56 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20"
+                      placeholder="Search transactions..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <div className="w-full min-w-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="paybazaar-gradient hover:opacity-95">
+                        <TableHead className="font-bold text-white text-center w-[200px] min-w-[200px]">
+                          TRANSACTOR
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[200px] min-w-[200px]">
+                          RECEIVER
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          TYPE
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          AMOUNT (₹)
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          STATUS
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[200px] min-w-[200px]">
+                          REMARKS
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                              <p className="text-sm text-muted-foreground">Loading transactions...</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedTransactions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
+                                <FileText className="h-10 w-10 text-muted-foreground" />
+                              </div>
+                              <p className="text-lg font-semibold text-foreground mb-2">
+                                {searchTerm ? "No matching transactions found" : "No transactions found"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {searchTerm
+                                  ? "Try adjusting your search terms"
+                                  : "Your wallet transactions will appear here"}
+                              </p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedTransactions.map((tx, index) => (
+                          <TableRow
+                            key={tx.transaction_id}
+                            className={`hover:bg-muted/50 transition-colors ${
+                              index % 2 === 0 ? "bg-background" : "bg-muted/20"
+                            }`}
+                          >
+                            <TableCell className="text-center py-4">
+                              <div>
+                                <span className="font-medium block">
+                                  {tx.transactor_name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {tx.transactor_type}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <div>
+                                <span className="font-medium block">
+                                  {tx.receiver_name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {tx.receiver_type}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${getTransactionTypeColor(
+                                  tx.transaction_type
+                                )}`}
                               >
-                                No transactions found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            paginatedTransactions.map((tx) => (
-                              <TableRow key={tx.transaction_id}>
-                                <TableCell className="text-center">
-                                  <div>
-                                    <span className="font-medium">
-                                      {tx.transactor_name}
-                                    </span>
-                                    <div className="text-xs text-muted-foreground">
-                                      {tx.transactor_type}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <div>
-                                    <span className="font-medium">
-                                      {tx.receiver_name}
-                                    </span>
-                                    <div className="text-xs text-muted-foreground">
-                                      {tx.receiver_type}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {getTransactionTypeBadge(tx.transaction_type)}
-                                </TableCell>
-                                <TableCell className="font-semibold text-center whitespace-nowrap">
-                                  ₹
-                                  {parseFloat(tx.amount).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {getStatusBadge(tx.transaction_status)}
-                                </TableCell>
-                                <TableCell className="text-center max-w-xs truncate">
-                                  {tx.remarks || "N/A"}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
+                                {tx.transaction_type}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center font-semibold py-4">
+                              ₹{parseFloat(tx.amount).toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                                  tx.transaction_status
+                                )}`}
+                              >
+                                {tx.transaction_status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center text-sm py-4">
+                              <div className="max-w-[200px] mx-auto truncate" title={tx.remarks}>
+                                {tx.remarks || "N/A"}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
 
-              {transactions.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to{" "}
-                    {Math.min(endIndex, transactions.length)} of{" "}
-                    {transactions.length} transactions
-                  </p>
-                  <div className="flex gap-2">
+              {/* Pagination */}
+              {transactions.length > 0 && totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-4 border-t border-border">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(endIndex, transactions.length)} of {transactions.length} entries
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                     >
                       Previous
                     </Button>
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (page) => (
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
                           <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setCurrentPage(page)}
-                            className="w-10"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={currentPage === pageNum ? "paybazaar-gradient text-white" : ""}
                           >
-                            {page}
+                            {pageNum}
                           </Button>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
                     >
                       Next
@@ -335,9 +444,9 @@ const UserWalletTransactions = () => {
                   </div>
                 </div>
               )}
-            </Card>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

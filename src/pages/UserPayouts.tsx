@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, Receipt } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
@@ -295,12 +295,15 @@ export default function UserPayouts() {
                         <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">
                           DATE & TIME
                         </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
+                          ACTION
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-16">
+                          <TableCell colSpan={10} className="text-center py-16">
                             <div className="flex flex-col items-center justify-center">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
                               <p className="text-sm text-muted-foreground">Loading transactions...</p>
@@ -309,7 +312,7 @@ export default function UserPayouts() {
                         </TableRow>
                       ) : paginatedTransactions.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-16">
+                          <TableCell colSpan={10} className="text-center py-16">
                             <div className="flex flex-col items-center justify-center">
                               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
                                 <FileText className="h-10 w-10 text-muted-foreground" />
@@ -371,6 +374,21 @@ export default function UserPayouts() {
                             </TableCell>
                             <TableCell className="text-center text-sm py-4">
                               {formatDate(transaction.transaction_date_and_time)}
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  navigate(`/receipt/${transaction.transaction_id}`, {
+                                    state: { transaction },
+                                  });
+                                }}
+                                className="shadow-md"
+                              >
+                                <Receipt className="h-4 w-4 mr-1" />
+                                Receipt
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
