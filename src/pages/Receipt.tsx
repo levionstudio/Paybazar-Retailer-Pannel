@@ -219,7 +219,6 @@ export default function ReceiptPage() {
     // Three columns for transaction details
     doc.text("Transfer Type", benefCol1, yPosition, { align: "center" });
     doc.text("Amount", benefCol2, yPosition, { align: "center" });
-    doc.text("Commission", benefCol3, yPosition, { align: "center" });
     
     yPosition += 5;
     doc.setFont("helvetica", "normal");
@@ -245,15 +244,15 @@ export default function ReceiptPage() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
-    doc.text(
-      `${parseFloat(transaction.commission).toLocaleString("en-IN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`,
-      benefCol3,
-      yPosition,
-      { align: "center" }
-    );
+    // doc.text(
+    //   `${parseFloat(transaction.commission).toLocaleString("en-IN", {
+    //     minimumFractionDigits: 2,
+    //     maximumFractionDigits: 2,
+    //   })}`,
+    //   benefCol3,
+    //   yPosition,
+    //   { align: "center" }
+    // );
     
     // Footer
     yPosition = pageHeight - 30;
@@ -439,17 +438,7 @@ export default function ReceiptPage() {
                           })}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-sm font-semibold text-slate-600 block mb-1">
-                          Commission:
-                        </span>
-                        <span className="text-sm text-slate-900">
-                          ₹{parseFloat(transaction.commission).toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
+                      
                     </div>
                   </div>
 
