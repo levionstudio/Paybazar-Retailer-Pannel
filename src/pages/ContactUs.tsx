@@ -193,7 +193,8 @@ const ContactUs = () => {
                       title: "Location",
                       value: (
                         <>
-                          Office No-304, Plot No-2 T/F Netaji Subhash Marg
+                          Unit 902, Tower B4 on 9th Spaze I-Tech Park, Sector-49, Sohna
+                          Road, Gurugram, Haryana, 122018.
                           <br />
                           Delhi
                         </>
