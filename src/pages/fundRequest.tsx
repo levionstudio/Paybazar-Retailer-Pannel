@@ -167,11 +167,6 @@ const RequestFunds = () => {
     } else if (parseFloat(formData.amount) <= 0) {
       errors.amount = "Amount must be greater than 0";
     }
-    if (!formData.remarks) {
-      errors.remarks = "Remarks are required";
-    } else if (formData.remarks.trim().length < 5) {
-      errors.remarks = "Remarks must be at least 5 characters";
-    }
 
     if (Object.keys(errors).length > 0) {
       const firstError = Object.values(errors)[0];
@@ -216,6 +211,7 @@ const RequestFunds = () => {
     }
 
     // ✅ Build correct payload according to backend model
+    // If remarks is empty, use default message
     const payload = {
       admin_id: tokenData.data.admin_id,
       requester_id: tokenData.data.user_id,
@@ -226,7 +222,7 @@ const RequestFunds = () => {
       bank_name: formData.bank_name,
       request_date: formData.deposite_date,
       utr_number: formData.utr_number,
-      remarks: formData.remarks,
+      remarks: formData.remarks.trim() || "Admin, please approve my fund request",
     };
 
     try {
@@ -458,7 +454,7 @@ const RequestFunds = () => {
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label
-                          htmlFor="ifsc_code"
+                          htmlFor="bank_name"
                           className="text-sm font-semibold text-foreground flex items-center gap-1"
                         >
                           Bank Name <span className="text-destructive">*</span>
@@ -470,7 +466,7 @@ const RequestFunds = () => {
                           onChange={handleChange}
                           className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
                           placeholder="Enter Bank Name"
-                          maxLength={11}
+                          maxLength={50}
                           required
                           aria-required="true"
                         />
@@ -479,7 +475,7 @@ const RequestFunds = () => {
                       {/* Deposite Date */}
                       <div className="space-y-2">
                         <Label
-                          htmlFor="ifsc_code"
+                          htmlFor="deposite_date"
                           className="text-sm font-semibold text-foreground flex items-center gap-1"
                         >
                           Deposite Date{" "}
@@ -490,9 +486,7 @@ const RequestFunds = () => {
                           type="date"
                           value={formData.deposite_date}
                           onChange={handleChange}
-                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
-                          placeholder="Enter Deposited Date"
-                          maxLength={11}
+                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background"
                           required
                           aria-required="true"
                         />
@@ -541,23 +535,24 @@ const RequestFunds = () => {
                       </div>
                     </div>
 
-                    {/* Remarks */}
+                    {/* Remarks - Now Optional */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="remarks"
                         className="text-sm font-semibold text-foreground flex items-center gap-1"
                       >
-                        Remarks <span className="text-destructive">*</span>
+                        Remarks <span className="text-muted-foreground text-xs">(Optional)</span>
                       </Label>
                       <Textarea
                         id="remarks"
                         value={formData.remarks}
                         onChange={handleChange}
                         className="min-h-[120px] border-2 border-border focus:border-primary transition-colors bg-background resize-none"
-                        placeholder="Enter any additional notes or remarks"
-                        required
-                        aria-required="true"
+                        placeholder="Enter any additional notes or remarks (leave empty for default message)"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        If left empty, default message will be: "Admin, please approve my fund request"
+                      </p>
                     </div>
 
                     <div className="flex gap-4 pt-6">
