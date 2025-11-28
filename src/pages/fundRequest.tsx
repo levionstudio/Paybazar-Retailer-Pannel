@@ -222,7 +222,7 @@ const RequestFunds = () => {
       bank_name: formData.bank_name,
       request_date: formData.deposite_date,
       utr_number: formData.utr_number,
-      remarks: formData.remarks.trim() || "Admin, please approve my fund request",
+      remarks: formData.remarks.trim() || "Admin, please approve",
     };
 
     try {
@@ -551,7 +551,7 @@ const RequestFunds = () => {
                         placeholder="Enter any additional notes or remarks (leave empty for default message)"
                       />
                       <p className="text-xs text-muted-foreground">
-                        If left empty, default message will be: "Admin, please approve my fund request"
+                        If left empty, default message will be: "Admin, please approve"
                       </p>
                     </div>
 
