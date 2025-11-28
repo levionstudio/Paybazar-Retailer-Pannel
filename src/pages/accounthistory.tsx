@@ -295,9 +295,7 @@ const UserWalletTransactions = () => {
                         <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
                           STATUS
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center w-[200px] min-w-[200px]">
-                          REMARKS
-                        </TableHead>
+                      
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -380,11 +378,7 @@ const UserWalletTransactions = () => {
                                 {tx.transaction_status}
                               </span>
                             </TableCell>
-                            <TableCell className="text-center text-sm py-4">
-                              <div className="max-w-[200px] mx-auto truncate" title={tx.remarks}>
-                                {tx.remarks || "N/A"}
-                              </div>
-                            </TableCell>
+                           
                           </TableRow>
                         ))
                       )}

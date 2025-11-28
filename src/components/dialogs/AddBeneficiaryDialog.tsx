@@ -320,144 +320,159 @@ export function AddBeneficiaryDialog({
       setSelectedBankIFSC("");
     }
   };
+return (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="sm:max-w-[500px] bg-background border-border">
+      <DialogHeader className="text-center">
+        <DialogTitle className="text-lg font-semibold tracking-wider">
+          ADD BENEFICIARY
+        </DialogTitle>
+      </DialogHeader>
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-background border-border">
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-lg font-semibold tracking-wider">
-            ADD BENEFICIARY
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-          {/* Bank Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="bank" className="text-sm font-medium">
-              Select Bank
-            </Label>
-            <Select
-              value={formData.bank}
-              onValueChange={handleBankChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="--Select Bank--" />
-              </SelectTrigger>
-              <SelectContent>
-                {loading ? (
-                  <SelectItem value="loading" disabled>Loading banks...</SelectItem>
-                ) : (
-                  banks.map((bank) => (
-                    <SelectItem key={bank.bank_name} value={bank.bank_name}>
-                      {bank.bank_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {errors.bank && (
-              <p className="text-red-500 text-xs">{errors.bank}</p>
-            )}
-          </div>
-
-          {/* IFSC and Account Number Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ifsc" className="text-sm font-medium">
-                IFSC
-              </Label>
-              <Input
-                id="ifsc"
-                type="text"
-                value={formData.ifsc}
-                onChange={handleIFSCChange}
-                placeholder="Enter IFSC"
-                className="uppercase"
-                maxLength={11}
-              />
-              {errors.ifsc && (
-                <p className="text-red-500 text-xs">{errors.ifsc}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="accountNumber" className="text-sm font-medium">
-                Account Number
-              </Label>
-              <div className="flex gap-2 items-center">
+      <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        {/* Bank Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="bank" className="text-sm font-medium">
+            Select Bank
+          </Label>
+          <Select
+            value={formData.bank}
+            onValueChange={handleBankChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="--Select Bank--" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <div className="sticky top-0 bg-background p-2 border-b">
                 <Input
-                  id="accountNumber"
+                  placeholder="Search bank..."
+                  className="h-9"
                   type="text"
-                  value={formData.accountNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, accountNumber: e.target.value })
-                  }
-                  placeholder="Account Number"
-                  className="flex-1"
+                  style={{ fontSize: '16px' }}
+                  onChange={(e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const items = document.querySelectorAll('[role="option"]');
+                    items.forEach((item) => {
+                      const text = item.textContent?.toLowerCase() || '';
+                      item.classList.toggle('hidden', !text.includes(searchTerm));
+                    });
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
                 />
-                <Button
-                  type="button"
-                  onClick={handleVerifyAccount}
-                  disabled={isVerifying}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap disabled:opacity-50"
-                >
-                  {isVerifying ? "Verifying..." : "Verify A/C"}
-                </Button>
               </div>
-              {errors.accountNumber && (
-                <p className="text-red-500 text-xs">{errors.accountNumber}</p>
+              {loading ? (
+                <SelectItem value="loading" disabled>Loading banks...</SelectItem>
+              ) : (
+                banks.map((bank) => (
+                  <SelectItem key={bank.bank_name} value={bank.bank_name}>
+                    {bank.bank_name}
+                  </SelectItem>
+                ))
               )}
-              {errors.verify && (
-                <p className="text-red-500 text-xs">{errors.verify}</p>
-              )}
-              {isAccountVerified && !errors.verify && (
-                <p className="text-green-600 text-xs flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Account verified successfully
-                </p>
-              )}
-            </div>
-          </div>
+            </SelectContent>
+          </Select>
+          {errors.bank && (
+            <p className="text-red-500 text-xs">{errors.bank}</p>
+          )}
+        </div>
 
-          {/* Beneficiary Name */}
-          <div className="space-y-2">
-            <Label htmlFor="beneficiaryName" className="text-sm font-medium">
-              Beneficiary Name
-            </Label>
+        {/* IFSC */}
+        <div className="space-y-2">
+          <Label htmlFor="ifsc" className="text-sm font-medium">
+            IFSC
+          </Label>
+          <Input
+            id="ifsc"
+            type="text"
+            value={formData.ifsc}
+            onChange={handleIFSCChange}
+            placeholder="Enter IFSC"
+            className="uppercase"
+            maxLength={11}
+          />
+          {errors.ifsc && (
+            <p className="text-red-500 text-xs">{errors.ifsc}</p>
+          )}
+        </div>
+
+        {/* Account Number */}
+        <div className="space-y-2">
+          <Label htmlFor="accountNumber" className="text-sm font-medium">
+            Account Number
+          </Label>
+          <div className="flex gap-2 items-center">
             <Input
-              id="beneficiaryName"
-              type="text"
-              value={formData.beneficiaryName}
+              id="accountNumber"
+              type="number"
+              inputMode="numeric"
+              value={formData.accountNumber}
               onChange={(e) =>
-                setFormData({ ...formData, beneficiaryName: e.target.value })
+                setFormData({ ...formData, accountNumber: e.target.value })
               }
-              placeholder="Enter Beneficiary Name"
+              placeholder="Enter Account Number"
+             
             />
-            {errors.beneficiaryName && (
-              <p className="text-red-500 text-xs">{errors.beneficiaryName}</p>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               type="button"
-              onClick={handleCancel}
-              variant="outline"
-              className="flex-1"
+              onClick={handleVerifyAccount}
+              disabled={isVerifying}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap disabled:opacity-50"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 paybazaar-gradient text-white"
-              disabled={isSubmitting || loading}
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isVerifying ? "Verifying..." : "Verify A/C"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+          {errors.accountNumber && (
+            <p className="text-red-500 text-xs">{errors.accountNumber}</p>
+          )}
+          {errors.verify && (
+            <p className="text-red-500 text-xs">{errors.verify}</p>
+          )}
+          {isAccountVerified && !errors.verify && (
+            <p className="text-green-600 text-xs flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4" />
+              Account verified successfully
+            </p>
+          )}
+        </div>
+
+        {/* Beneficiary Name */}
+        <div className="space-y-2">
+          <Label htmlFor="beneficiaryName" className="text-sm font-medium">
+            Beneficiary Name
+          </Label>
+          <Input
+            id="beneficiaryName"
+            type="text"
+            value={formData.beneficiaryName}
+            onChange={(e) =>
+              setFormData({ ...formData, beneficiaryName: e.target.value })
+            }
+            placeholder="Enter Beneficiary Name"
+          />
+          {errors.beneficiaryName && (
+            <p className="text-red-500 text-xs">{errors.beneficiaryName}</p>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          <Button
+            type="button"
+            onClick={handleCancel}
+            variant="outline"
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 paybazaar-gradient text-white"
+            disabled={isSubmitting || loading}
+          >
+            {isSubmitting ? "Submitting..." : "Submit"}
+          </Button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>
+)};

@@ -23,7 +23,7 @@ import ContactUs from "./pages/ContactUs";
 import MyCommission from "./pages/Commission";
 import RequestFunds from "./pages/fundRequest";
 import GetFundRequests from "./pages/requestedFund";
-import UserWalletTransactions from "./pages/transactionUsers";
+import UserWalletTransactions from "./pages/accounthistory";
 import PayoutRequest from "./pages/payout";
 import Settlement from "./pages/settlement";
 import UserPayouts from "./pages/UserPayouts";

@@ -24,12 +24,11 @@ export default function Services() {
 
     {
       id: "payout",
-      title: "PAYOUT",
+      title: "SETTLEMENT",
       subtitle: "Instant Settlement",
       icon: Landmark,
       status: "active",
       description: "Send settlement instantly to bank",
-      commission: "Flat ₹5",
       color: "bg-gradient-to-r from-purple-600 to-purple-400",
       category: "Settlement",
       route: "/settlement",
@@ -42,7 +41,6 @@ export default function Services() {
       icon: Fingerprint,
       status: "active",
       description: "Withdraw cash using Aadhaar authentication",
-      commission: "₹5-15 per transaction",
       color: "bg-gradient-to-r from-blue-600 to-blue-400",
       category: "Banking",
       route: "/aeps",
@@ -54,7 +52,6 @@ export default function Services() {
       icon: Fingerprint,
       status: "active",
       description: "Advanced AEPS service",
-      commission: "₹5-20 per transaction",
       color: "bg-gradient-to-r from-blue-500 to-blue-300",
       category: "Banking",
       route: "/aeps2",
@@ -66,7 +63,6 @@ export default function Services() {
       icon: FileText,
       status: "active",
       description: "Pay electricity, water, gas bills",
-      commission: "0.5% - 2% commission",
       color: "bg-gradient-to-r from-emerald-600 to-emerald-400",
       category: "Bills",
       route: "/utility-payments",
@@ -78,7 +74,6 @@ export default function Services() {
       icon: Wallet,
       status: "active",
       description: "Prepaid payment instrument services",
-      commission: "₹2-10 per transaction",
       color: "bg-gradient-to-r from-cyan-600 to-cyan-400",
       category: "Wallet",
       route: "/digikatha",
@@ -90,7 +85,6 @@ export default function Services() {
       icon: ArrowLeftRight,
       status: "active",
       description: "Send money across India instantly",
-      commission: "₹10-25 per transaction",
       color: "bg-gradient-to-r from-indigo-600 to-indigo-400",
       category: "Transfer",
       route: "/dmt1",
@@ -102,7 +96,6 @@ export default function Services() {
       icon: ArrowLeftRight,
       status: "active",
       description: "Transfer using upgraded routing",
-      commission: "₹10-20 per transaction",
       color: "bg-gradient-to-r from-indigo-500 to-indigo-300",
       category: "Transfer",
       route: "/dmt2",
@@ -114,7 +107,6 @@ export default function Services() {
       icon: Smartphone,
       status: "active",
       description: "Recharge prepaid and DTH connections",
-      commission: "1% - 3% commission",
       color: "bg-gradient-to-r from-orange-500 to-orange-400",
       category: "Recharge",
       route: "/mobile-recharge",
@@ -211,13 +203,7 @@ export default function Services() {
                       {service.description}
                     </p>
 
-                    {/* Commission */}
-                    <div className="flex justify-between text-sm border-t pt-3 mt-3">
-                      <span className="text-gray-500">Commission:</span>
-                      <span className="font-semibold text-green-600">
-                        {service.commission}
-                      </span>
-                    </div>
+                  
 
                     <Button className="w-full mt-4 rounded-full">Use Service</Button>
                   </CardContent>
