@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ChevronDown } from "lucide-react";
 
 interface AddBeneficiaryDialogProps {
   open: boolean;
@@ -347,72 +347,84 @@ export function AddBeneficiaryDialog({
             <Label htmlFor="bank" className="text-sm font-medium">
               Select Bank
             </Label>
-            <Select
-              value={formData.bank}
-              onValueChange={handleBankChange}
-              onOpenChange={(isOpen) => {
-                setIsSelectOpen(isOpen);
-                if (!isOpen) {
-                  setBankSearchTerm("");
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="--Select Bank--" />
-              </SelectTrigger>
-              <SelectContent 
-                className="max-h-[300px]"
-                onCloseAutoFocus={(e) => {
-                  // Prevent auto-focus which can cause keyboard issues
-                  e.preventDefault();
-                }}
+            <div className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-between text-left font-normal"
+                onClick={() => setIsSelectOpen(!isSelectOpen)}
               >
-                <div className="sticky top-0 bg-background p-2 border-b z-50">
-                  <Input
-                    ref={searchInputRef}
-                    placeholder="Search bank..."
-                    className="h-9"
-                    type="search"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck="false"
-                    inputMode="text"
-                    style={{ fontSize: '16px' }}
-                    value={bankSearchTerm}
-                    onChange={(e) => {
-                      setBankSearchTerm(e.target.value);
-                    }}
-                    onKeyDown={(e) => {
-                      // Prevent Enter key from closing the dropdown
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                      }
-                      // Prevent escape from closing if there's search text
-                      if (e.key === 'Escape' && bankSearchTerm) {
-                        e.preventDefault();
-                        setBankSearchTerm("");
-                      }
-                    }}
+                <span className={formData.bank ? "" : "text-muted-foreground"}>
+                  {formData.bank || "--Select Bank--"}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+              
+              {/* Custom Dropdown */}
+              {isSelectOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40 bg-black/20"
+                    onClick={() => setIsSelectOpen(false)}
                   />
-                </div>
-                <div className="overflow-y-auto max-h-[250px]">
-                  {loading ? (
-                    <SelectItem value="loading" disabled>Loading banks...</SelectItem>
-                  ) : filteredBanks.length > 0 ? (
-                    filteredBanks.map((bank) => (
-                      <SelectItem key={bank.bank_name} value={bank.bank_name}>
-                        {bank.bank_name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      {bankSearchTerm ? "No banks match your search" : "No banks found"}
+                  
+                  {/* Dropdown Content */}
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg z-50 max-h-[300px] flex flex-col">
+                    {/* Search Input - Always at top */}
+                    <div className="p-2 border-b border-border sticky top-0 bg-background">
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search bank..."
+                        className="h-9"
+                        type="text"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        style={{ fontSize: '16px' }}
+                        value={bankSearchTerm}
+                        onChange={(e) => setBankSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
+                        autoFocus
+                      />
                     </div>
-                  )}
-                </div>
-              </SelectContent>
-            </Select>
+                    
+                    {/* Bank List - Scrollable */}
+                    <div className="overflow-y-auto max-h-[250px]">
+                      {loading ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          Loading banks...
+                        </div>
+                      ) : filteredBanks.length > 0 ? (
+                        filteredBanks.map((bank) => (
+                          <button
+                            key={bank.bank_name}
+                            type="button"
+                            className="w-full text-left px-4 py-3 hover:bg-muted transition-colors text-sm border-b border-border last:border-b-0"
+                            onClick={() => {
+                              handleBankChange(bank.bank_name);
+                              setIsSelectOpen(false);
+                              setBankSearchTerm("");
+                            }}
+                          >
+                            {bank.bank_name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          {bankSearchTerm ? "No banks match your search" : "No banks found"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             {errors.bank && (
               <p className="text-red-500 text-xs">{errors.bank}</p>
             )}
