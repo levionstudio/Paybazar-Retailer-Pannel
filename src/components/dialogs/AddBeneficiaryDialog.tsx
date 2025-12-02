@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import {
   Dialog,
@@ -45,6 +45,7 @@ export function AddBeneficiaryDialog({
   mobileNumber = "",
 }: AddBeneficiaryDialogProps) {
   const { toast } = useToast();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<BeneficiaryFormData>({
     bank: "",
     ifsc: "",
@@ -59,6 +60,7 @@ export function AddBeneficiaryDialog({
   const [isAccountVerified, setIsAccountVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [bankSearchTerm, setBankSearchTerm] = useState("");
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   // Fetch banks from API
   useEffect(() => {
@@ -348,25 +350,51 @@ export function AddBeneficiaryDialog({
             <Select
               value={formData.bank}
               onValueChange={handleBankChange}
+              open={isSelectOpen}
               onOpenChange={(isOpen) => {
+                setIsSelectOpen(isOpen);
                 if (!isOpen) {
                   setBankSearchTerm("");
+                } else {
+                  // Auto-focus the search input when dropdown opens
+                  setTimeout(() => {
+                    searchInputRef.current?.focus();
+                  }, 100);
                 }
               }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="--Select Bank--" />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <div className="sticky top-0 bg-background p-2 border-b z-50">
+              <SelectContent 
+                className="max-h-[300px]"
+                onCloseAutoFocus={(e) => {
+                  // Prevent auto-focus which can cause keyboard issues
+                  e.preventDefault();
+                }}
+              >
+                <div 
+                  className="sticky top-0 bg-background p-2 border-b z-50"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
                   <Input
+                    ref={searchInputRef}
                     placeholder="Search bank..."
                     className="h-9"
-                    type="text"
+                    type="search"
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck="false"
+                    inputMode="text"
                     style={{ fontSize: '16px' }}
                     value={bankSearchTerm}
                     onChange={(e) => {
@@ -375,6 +403,10 @@ export function AddBeneficiaryDialog({
                     }}
                     onKeyDown={(e) => {
                       e.stopPropagation();
+                      // Prevent Enter key from closing the dropdown
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                      }
                     }}
                     onPointerDown={(e) => {
                       e.stopPropagation();
@@ -387,6 +419,7 @@ export function AddBeneficiaryDialog({
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.currentTarget.focus();
                     }}
                     onFocus={(e) => {
                       e.stopPropagation();
@@ -404,7 +437,7 @@ export function AddBeneficiaryDialog({
                     ))
                   ) : (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      No banks found
+                      {bankSearchTerm ? "No banks match your search" : "No banks found"}
                     </div>
                   )}
                 </div>
