@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,48 +156,48 @@ export default function Services() {
           {/* HERO SECTION */}
           <div className="paybazaar-gradient p-6 sm:p-8 text-white shadow">
             <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl font-bold">Our Services</h1>
-              <p className="text-white/80 mt-2 text-lg">
-                Empower your business with PayBazaar’s financial solutions
+              <h1 className="text-2xl sm:text-3xl font-bold">Our Services</h1>
+              <p className="text-white/80 mt-2 text-sm sm:text-lg">
+                Empower your business with PayBazaar's financial solutions
               </p>
 
-              <div className="mt-6 flex flex-col md:flex-row gap-4">
-                {/* SEARCH */}
-                <div className="relative w-full md:w-1/3">
+              {/* SEARCH */}
+              <div className="mt-6 w-full">
+                <div className="relative w-full sm:w-96">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 h-5 w-5" />
                   <Input
                     placeholder="Search services..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/10 border border-white/20 text-white placeholder:text-white/60 rounded-xl"
+                    className="pl-10 bg-white/10 border border-white/20 text-white placeholder:text-white/60 rounded-xl h-11"
                   />
                 </div>
+              </div>
 
-                {/* CATEGORY FILTERS */}
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "secondary" : "ghost"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category)}
-                      className={
-                        selectedCategory === category
-                          ? "bg-white text-primary rounded-full"
-                          : "text-white hover:bg-white/10 rounded-full"
-                      }
-                    >
-                      {category}
-                    </Button>
-                  ))}
-                </div>
+              {/* CATEGORY FILTERS */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                    className={
+                      selectedCategory === category
+                        ? "bg-white text-primary rounded-full px-4 py-2 h-auto"
+                        : "text-white hover:bg-white/10 rounded-full px-4 py-2 h-auto"
+                    }
+                  >
+                    {category}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
 
           {/* SERVICES GRID */}
-          <div className="p-6">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="p-4 sm:p-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredServices.map((service) => (
                 <Card
                   key={service.id}

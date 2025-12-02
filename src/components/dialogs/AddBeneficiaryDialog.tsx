@@ -363,6 +363,10 @@ export function AddBeneficiaryDialog({
                     placeholder="Search bank..."
                     className="h-9"
                     type="text"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
                     style={{ fontSize: '16px' }}
                     value={bankSearchTerm}
                     onChange={(e) => {
@@ -370,6 +374,15 @@ export function AddBeneficiaryDialog({
                       setBankSearchTerm(e.target.value);
                     }}
                     onKeyDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onMouseDown={(e) => {
                       e.stopPropagation();
                     }}
                     onClick={(e) => {
@@ -380,19 +393,21 @@ export function AddBeneficiaryDialog({
                     }}
                   />
                 </div>
-                {loading ? (
-                  <SelectItem value="loading" disabled>Loading banks...</SelectItem>
-                ) : filteredBanks.length > 0 ? (
-                  filteredBanks.map((bank) => (
-                    <SelectItem key={bank.bank_name} value={bank.bank_name}>
-                      {bank.bank_name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    No banks found
-                  </div>
-                )}
+                <div className="overflow-y-auto max-h-[250px]">
+                  {loading ? (
+                    <SelectItem value="loading" disabled>Loading banks...</SelectItem>
+                  ) : filteredBanks.length > 0 ? (
+                    filteredBanks.map((bank) => (
+                      <SelectItem key={bank.bank_name} value={bank.bank_name}>
+                        {bank.bank_name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No banks found
+                    </div>
+                  )}
+                </div>
               </SelectContent>
             </Select>
             {errors.bank && (
