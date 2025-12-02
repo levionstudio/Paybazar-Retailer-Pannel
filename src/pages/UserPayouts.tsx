@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -18,17 +18,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileText, Receipt } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowLeft, FileText, Receipt, Download, Printer, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface Transaction {
   transaction_id: string;
   phone_number: string;
   bank_name: string;
   beneficiary_name: string;
+  account_number: string;
   amount: string;
   commission: string;
   transfer_type: string;
@@ -46,6 +55,7 @@ interface TokenData {
 export default function UserPayouts() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,6 +63,8 @@ export default function UserPayouts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   useEffect(() => {
     const getUserId = () => {
@@ -108,8 +120,14 @@ export default function UserPayouts() {
       );
 
       if (response.data.status === "success" && response.data.data?.transactions) {
-        setAllTransactions(response.data.data.transactions);
-        setTransactions(response.data.data.transactions);
+        // Sort transactions by date in descending order (latest first)
+        const sortedTransactions = response.data.data.transactions.sort((a: Transaction, b: Transaction) => {
+          const dateA = new Date(a.transaction_date_and_time).getTime();
+          const dateB = new Date(b.transaction_date_and_time).getTime();
+          return dateB - dateA; // Descending order (latest first)
+        });
+        setAllTransactions(sortedTransactions);
+        setTransactions(sortedTransactions);
       } else {
         setAllTransactions([]);
         setTransactions([]);
@@ -146,6 +164,13 @@ export default function UserPayouts() {
     }
   };
 
+  const formatAmount = (amount: string) => {
+    return parseFloat(amount).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "SUCCESS":
@@ -159,6 +184,19 @@ export default function UserPayouts() {
     }
   };
 
+  const getStatusColorForReceipt = (status: string) => {
+    switch (status.toUpperCase()) {
+      case "SUCCESS":
+        return "text-green-600 bg-green-50";
+      case "FAILED":
+        return "text-red-600 bg-red-50";
+      case "PENDING":
+        return "text-yellow-600 bg-yellow-50";
+      default:
+        return "text-gray-600 bg-gray-50";
+    }
+  };
+
   // Filter transactions based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -169,7 +207,6 @@ export default function UserPayouts() {
 
     const searchLower = searchTerm.toLowerCase().trim();
     const filtered = allTransactions.filter((transaction) => {
-      // Search across all fields
       const searchableFields = [
         transaction.transaction_id,
         transaction.phone_number,
@@ -196,6 +233,273 @@ export default function UserPayouts() {
   const startIndex = (currentPage - 1) * entriesPerPage;
   const endIndex = startIndex + entriesPerPage;
   const paginatedTransactions = transactions.slice(startIndex, endIndex);
+
+  const handleViewReceipt = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsReceiptOpen(true);
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!receiptRef.current || !selectedTransaction) return;
+
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait...",
+      });
+
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(
+        imgData,
+        "PNG",
+        imgX,
+        imgY,
+        imgWidth * ratio,
+        imgHeight * ratio
+      );
+      pdf.save(`receipt-${selectedTransaction.transaction_id}.pdf`);
+
+      toast({
+        title: "Success",
+        description: "Receipt downloaded successfully",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download receipt",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrintReceipt = () => {
+    if (!receiptRef.current) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    const receiptContent = receiptRef.current.innerHTML;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${selectedTransaction?.transaction_id}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              background: white;
+              padding: 20mm;
+            }
+            @media print {
+              @page {
+                size: A4;
+                margin: 15mm;
+              }
+              body {
+                padding: 0;
+              }
+            }
+            .receipt-container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+            }
+            /* Match the exact styles from the receipt */
+            .border-b-2 {
+              border-bottom: 2px solid #e5e7eb;
+            }
+            .border-b {
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .border-t {
+              border-top: 1px solid #e5e7eb;
+            }
+            .border-t-2 {
+              border-top: 2px solid #e5e7eb;
+            }
+            .text-center {
+              text-align: center;
+            }
+            .font-bold {
+              font-weight: 700;
+            }
+            .font-semibold {
+              font-weight: 600;
+            }
+            .font-medium {
+              font-medium: 500;
+            }
+            .text-3xl {
+              font-size: 1.875rem;
+              line-height: 2.25rem;
+            }
+            .text-xl {
+              font-size: 1.25rem;
+              line-height: 1.75rem;
+            }
+            .text-lg {
+              font-size: 1.125rem;
+              line-height: 1.75rem;
+            }
+            .text-sm {
+              font-size: 0.875rem;
+              line-height: 1.25rem;
+            }
+            .text-xs {
+              font-size: 0.75rem;
+              line-height: 1rem;
+            }
+            .text-gray-800 {
+              color: #1f2937;
+            }
+            .text-gray-700 {
+              color: #374151;
+            }
+            .text-gray-600 {
+              color: #4b5563;
+            }
+            .text-gray-500 {
+              color: #6b7280;
+            }
+            .text-gray-400 {
+              color: #9ca3af;
+            }
+            .text-green-600 {
+              color: #16a34a;
+            }
+            .text-red-600 {
+              color: #dc2626;
+            }
+            .text-yellow-600 {
+              color: #ca8a04;
+            }
+            .bg-gray-50 {
+              background-color: #f9fafb;
+            }
+            .bg-green-50 {
+              background-color: #f0fdf4;
+            }
+            .bg-red-50 {
+              background-color: #fef2f2;
+            }
+            .bg-yellow-50 {
+              background-color: #fefce8;
+            }
+            .rounded-lg {
+              border-radius: 0.5rem;
+            }
+            .p-8 {
+              padding: 2rem;
+            }
+            .p-4 {
+              padding: 1rem;
+            }
+            .px-4 {
+              padding-left: 1rem;
+              padding-right: 1rem;
+            }
+            .py-2 {
+              padding-top: 0.5rem;
+              padding-bottom: 0.5rem;
+            }
+            .pt-2 {
+              padding-top: 0.5rem;
+            }
+            .pt-6 {
+              padding-top: 1.5rem;
+            }
+            .pb-4 {
+              padding-bottom: 1rem;
+            }
+            .pb-6 {
+              padding-bottom: 1.5rem;
+            }
+            .mb-1 {
+              margin-bottom: 0.25rem;
+            }
+            .mb-2 {
+              margin-bottom: 0.5rem;
+            }
+            .mb-3 {
+              margin-bottom: 0.75rem;
+            }
+            .mb-6 {
+              margin-bottom: 1.5rem;
+            }
+            .space-y-2 > * + * {
+              margin-top: 0.5rem;
+            }
+            .space-y-4 > * + * {
+              margin-top: 1rem;
+            }
+            .grid {
+              display: grid;
+            }
+            .grid-cols-2 {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .gap-4 {
+              gap: 1rem;
+            }
+            .flex {
+              display: flex;
+            }
+            .justify-between {
+              justify-content: space-between;
+            }
+            .items-center {
+              align-items: center;
+            }
+            .font-mono {
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-container">
+            ${receiptContent}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   return (
     <div className="flex min-h-screen bg-background w-full">
@@ -280,6 +584,9 @@ export default function UserPayouts() {
                         <TableHead className="font-bold text-white text-center w-[180px] min-w-[180px]">
                           BENEFICIARY NAME
                         </TableHead>
+                        <TableHead className="font-bold text-white text-center w-[150px] min-w-[150px]">
+                          ACCOUNT NUMBER
+                        </TableHead>
                         <TableHead className="font-bold text-white text-center w-[120px] min-w-[120px]">
                           AMOUNT (₹)
                         </TableHead>
@@ -303,7 +610,7 @@ export default function UserPayouts() {
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-16">
+                          <TableCell colSpan={11} className="text-center py-16">
                             <div className="flex flex-col items-center justify-center">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
                               <p className="text-sm text-muted-foreground">Loading transactions...</p>
@@ -312,7 +619,7 @@ export default function UserPayouts() {
                         </TableRow>
                       ) : paginatedTransactions.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-16">
+                          <TableCell colSpan={11} className="text-center py-16">
                             <div className="flex flex-col items-center justify-center">
                               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
                                 <FileText className="h-10 w-10 text-muted-foreground" />
@@ -348,17 +655,14 @@ export default function UserPayouts() {
                             <TableCell className="text-center font-medium py-4">
                               {transaction.beneficiary_name}
                             </TableCell>
-                            <TableCell className="text-center font-semibold py-4">
-                              ₹{parseFloat(transaction.amount).toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
+                            <TableCell className="text-center font-mono py-4">
+                              {transaction.account_number}
                             </TableCell>
                             <TableCell className="text-center font-semibold py-4">
-                              ₹{parseFloat(transaction.commission).toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
+                              ₹{formatAmount(transaction.amount)}
+                            </TableCell>
+                            <TableCell className="text-center font-semibold py-4">
+                              ₹{formatAmount(transaction.commission)}
                             </TableCell>
                             <TableCell className="text-center py-4">
                               {transaction.transfer_type}
@@ -379,11 +683,7 @@ export default function UserPayouts() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  navigate(`/receipt/${transaction.transaction_id}`, {
-                                    state: { transaction },
-                                  });
-                                }}
+                                onClick={() => handleViewReceipt(transaction)}
                                 className="shadow-md"
                               >
                                 <Receipt className="h-4 w-4 mr-1" />
@@ -453,7 +753,130 @@ export default function UserPayouts() {
           </div>
         </main>
       </div>
+
+      {/* Receipt Dialog */}
+      <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Transaction Receipt</DialogTitle>
+          </DialogHeader>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-2 justify-end -mt-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintReceipt}
+              className="gap-2"
+            >
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleDownloadReceipt}
+              className="gap-2 paybazaar-gradient text-white"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+
+          {selectedTransaction && (
+            <div ref={receiptRef} className="bg-white p-8">
+              {/* Header */}
+              <div className="text-center border-b-2 border-gray-200 pb-6 mb-6">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                  TRANSACTION RECEIPT
+                </h1>
+                <p className="text-sm text-gray-500">PayBazaar Payment Services</p>
+              </div>
+
+              {/* Transaction Status */}
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
+                  <p className="text-lg font-mono font-semibold">
+                    {selectedTransaction.transaction_id}
+                  </p>
+                </div>
+                <div
+                  className={`px-4 py-2 rounded-lg font-semibold ${getStatusColorForReceipt(
+                    selectedTransaction.transaction_status
+                  )}`}
+                >
+                  {selectedTransaction.transaction_status.toUpperCase()}
+                </div>
+              </div>
+
+              {/* Transaction Details */}
+              <div className="space-y-4 mb-6">
+                <h2 className="text-lg font-semibold text-gray-700 mb-3">
+                  Transaction Details
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Date & Time</p>
+                    <p className="font-medium">
+                      {formatDate(selectedTransaction.transaction_date_and_time)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Transfer Type</p>
+                    <p className="font-medium">{selectedTransaction.transfer_type}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Phone Number</p>
+                    <p className="font-medium font-mono">{selectedTransaction.phone_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Bank Name</p>
+                    <p className="font-medium">{selectedTransaction.bank_name}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Beneficiary Name</p>
+                    <p className="font-medium">{selectedTransaction.beneficiary_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Account Number</p>
+                    <p className="font-medium font-mono">{selectedTransaction.account_number}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Amount Details */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h2 className="text-lg font-semibold text-gray-700 mb-3">
+                  Amount Details
+                </h2>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Transfer Amount</span>
+                  <span className="text-xl font-bold text-gray-800">
+                    ₹{formatAmount(selectedTransaction.amount)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center pt-6 border-t-2 border-gray-200">
+                <p className="text-sm text-gray-500 mb-2">
+                  This is a computer-generated receipt and does not require a signature.
+                </p>
+                <p className="text-xs text-gray-400">
+                  For any queries, please contact customer support.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
