@@ -350,16 +350,10 @@ export function AddBeneficiaryDialog({
             <Select
               value={formData.bank}
               onValueChange={handleBankChange}
-              open={isSelectOpen}
               onOpenChange={(isOpen) => {
                 setIsSelectOpen(isOpen);
                 if (!isOpen) {
                   setBankSearchTerm("");
-                } else {
-                  // Auto-focus the search input when dropdown opens
-                  setTimeout(() => {
-                    searchInputRef.current?.focus();
-                  }, 100);
                 }
               }}
             >
@@ -373,18 +367,7 @@ export function AddBeneficiaryDialog({
                   e.preventDefault();
                 }}
               >
-                <div 
-                  className="sticky top-0 bg-background p-2 border-b z-50"
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onTouchStart={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
+                <div className="sticky top-0 bg-background p-2 border-b z-50">
                   <Input
                     ref={searchInputRef}
                     placeholder="Search bank..."
@@ -398,31 +381,18 @@ export function AddBeneficiaryDialog({
                     style={{ fontSize: '16px' }}
                     value={bankSearchTerm}
                     onChange={(e) => {
-                      e.stopPropagation();
                       setBankSearchTerm(e.target.value);
                     }}
                     onKeyDown={(e) => {
-                      e.stopPropagation();
                       // Prevent Enter key from closing the dropdown
                       if (e.key === 'Enter') {
                         e.preventDefault();
                       }
-                    }}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onTouchStart={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.currentTarget.focus();
-                    }}
-                    onFocus={(e) => {
-                      e.stopPropagation();
+                      // Prevent escape from closing if there's search text
+                      if (e.key === 'Escape' && bankSearchTerm) {
+                        e.preventDefault();
+                        setBankSearchTerm("");
+                      }
                     }}
                   />
                 </div>
