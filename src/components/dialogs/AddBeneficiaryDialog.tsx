@@ -82,7 +82,6 @@ export function AddBeneficiaryDialog({
           setBanks(response.data.data.banks);
         }
       } catch (error: any) {
-        console.error("Error fetching banks:", error);
         toast({
           title: "Error",
           description: "Failed to fetch banks. Please try again.",
@@ -174,45 +173,59 @@ export function AddBeneficiaryDialog({
       return;
     }
 
+    if (!mobileNumber) {
+      setErrors({
+        ...errors,
+        verify: "Phone number is required for verification",
+      });
+      setIsAccountVerified(false);
+      return;
+    }
+
     try {
       setIsVerifying(true);
       setErrors({ ...errors, verify: "" });
       
-      // TODO: Replace with actual API endpoint when available
-      // Example API call:
-      // const token = localStorage.getItem("authToken");
-      // const response = await axios.post(
-      //   `${import.meta.env.VITE_API_BASE_URL}/user/verify/account`,
-      //   {
-      //     ifsc_code: formData.ifsc,
-      //     account_number: formData.accountNumber,
-      //   },
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       "Content-Type": "application/json",
-      //     },
-      //   }
-      // );
+      const token = localStorage.getItem("authToken");
       
-      // For now, simulate successful verification after a short delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/user/payout/${mobileNumber}/${formData.accountNumber}/${formData.ifsc}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       
-      setIsAccountVerified(true);
-      setErrors({ ...errors, verify: "" });
-      toast({
-        title: "Account Verified",
-        description: "Account number has been verified successfully",
-      });
+      if (response.data.status === true && response.data.status_code === 0) {
+        setIsAccountVerified(true);
+        setErrors({ ...errors, verify: "" });
+        
+        if (response.data.beneficiary_name) {
+          setFormData(prev => ({
+            ...prev,
+            beneficiaryName: response.data.beneficiary_name
+          }));
+        }
+        
+        toast({
+          title: "Account Verified",
+          description: response.data.message || "Account number has been verified successfully",
+        });
+      } else {
+        throw new Error(response.data.message || "Verification failed");
+      }
+      
     } catch (error: any) {
       setIsAccountVerified(false);
       setErrors({
         ...errors,
-        verify: error.response?.data?.message || "Failed to verify account. Please try again.",
+        verify: error.response?.data?.message || error.message || "Failed to verify account. Please try again.",
       });
       toast({
         title: "Verification Failed",
-        description: error.response?.data?.message || "Failed to verify account. Please try again.",
+        description: error.response?.data?.message || error.message || "Failed to verify account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -239,12 +252,12 @@ export function AddBeneficiaryDialog({
       const token = localStorage.getItem("authToken");
       
       const payload = {
-        mobile_number: mobileNumber, // Logged-in user's phone number (from login)
+        mobile_number: mobileNumber,
         bank_name: formData.bank,
         ifsc_code: formData.ifsc,
         account_number: formData.accountNumber,
         beneficiary_name: formData.beneficiaryName,
-        beneficiary_phone: mobileNumber, // Use remitter's phone number for beneficiary
+        beneficiary_phone: mobileNumber,
       };
 
       const response = await axios.post(
@@ -268,7 +281,6 @@ export function AddBeneficiaryDialog({
           onAdd(formData);
         }
 
-        // Reset form and close dialog
         setFormData({
           bank: "",
           ifsc: "",
@@ -278,6 +290,7 @@ export function AddBeneficiaryDialog({
         setErrors({});
         setSelectedBankIFSC("");
         setBankSearchTerm("");
+        setIsAccountVerified(false);
         onOpenChange(false);
       }
     } catch (error: any) {
@@ -301,18 +314,18 @@ export function AddBeneficiaryDialog({
     setErrors({});
     setSelectedBankIFSC("");
     setBankSearchTerm("");
+    setIsAccountVerified(false);
     onOpenChange(false);
   };
 
   const handleBankChange = (bankName: string) => {
     const selectedBank = banks.find((b) => b.bank_name === bankName);
     if (selectedBank) {
-      // Use complete IFSC code from API
       setSelectedBankIFSC(selectedBank.ifsc_code);
       setFormData({
         ...formData,
         bank: bankName,
-        ifsc: selectedBank.ifsc_code, // Auto-fill with complete IFSC code
+        ifsc: selectedBank.ifsc_code,
       });
     }
   };
@@ -320,13 +333,11 @@ export function AddBeneficiaryDialog({
   const handleIFSCChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     
-    // Limit to 11 characters (IFSC format: 4 letters + 0 + 6 alphanumeric)
     if (value.length > 11) {
       value = value.substring(0, 11);
     }
     
     setFormData({ ...formData, ifsc: value });
-    // Clear selected bank IFSC if user manually edits the IFSC
     if (selectedBankIFSC && value !== selectedBankIFSC) {
       setSelectedBankIFSC("");
     }
