@@ -202,16 +202,19 @@ export function AddBeneficiaryDialog({
         setIsAccountVerified(true);
         setErrors({ ...errors, verify: "" });
         
-        if (response.data.beneficiary_name) {
+        // Auto-fill beneficiary name from API response
+        if (response.data.data?.c_name) {
           setFormData(prev => ({
             ...prev,
-            beneficiaryName: response.data.beneficiary_name
+            beneficiaryName: response.data.data.c_name
           }));
         }
         
         toast({
           title: "Account Verified",
-          description: response.data.message || "Account number has been verified successfully",
+          description: response.data.data?.c_name 
+            ? `Account verified for ${response.data.data.c_name}` 
+            : "Account number has been verified successfully",
         });
       } else {
         throw new Error(response.data.message || "Verification failed");
