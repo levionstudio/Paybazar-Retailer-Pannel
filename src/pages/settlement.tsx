@@ -13,6 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Eye, CheckCircle2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, Trash2, X, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AddBeneficiaryDialog } from "@/components/dialogs/AddBeneficiaryDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +82,11 @@ export default function Settlement() {
   const [loading, setLoading] = useState(false);
   const [fetchingBeneficiaries, setFetchingBeneficiaries] = useState(false);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  
+  // Delete confirmation dialog states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [beneficiaryToDelete, setBeneficiaryToDelete] = useState<Beneficiary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // MPIN related states
   const [isMpinSet, setIsMpinSet] = useState(false);
@@ -258,12 +273,20 @@ export default function Settlement() {
     }
   };
 
-  const handleDelete = async (beneficiaryId: string) => {
+  const handleDeleteClick = (beneficiary: Beneficiary) => {
+    setBeneficiaryToDelete(beneficiary);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!beneficiaryToDelete) return;
+
     try {
+      setIsDeleting(true);
       const token = localStorage.getItem("authToken");
       
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/user/delete/beneficiary/${beneficiaryId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/user/delete/beneficiary/${beneficiaryToDelete.beneficiary_id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -273,16 +296,19 @@ export default function Settlement() {
       );
 
       // Check if deletion is successful (204 No Content or 200 OK)
-      // 204 responses typically have no body, so we check status code
       if (response.status === 204 || response.status === 200 || response.data?.status === "success") {
+        toast({
+          title: "Success",
+          description: `${beneficiaryToDelete.beneficiaryName} deleted successfully`,
+        });
+        
         // Refresh beneficiaries list
         if (payoutPhoneNumber) {
           await fetchBeneficiaries(payoutPhoneNumber);
         }
-        toast({
-          title: "Success",
-          description: "Beneficiary deleted successfully",
-        });
+        
+        setShowDeleteDialog(false);
+        setBeneficiaryToDelete(null);
       } else {
         toast({
           title: "Error",
@@ -296,6 +322,8 @@ export default function Settlement() {
         description: error.response?.data?.message || "Failed to delete beneficiary. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -832,7 +860,7 @@ export default function Settlement() {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleDelete(beneficiary.beneficiary_id)}
+                                onClick={() => handleDeleteClick(beneficiary)}
                                 className="shadow-md"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
@@ -858,6 +886,63 @@ export default function Settlement() {
         onAdd={handleAddBeneficiary}
         mobileNumber={payoutPhoneNumber}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Beneficiary
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>Are you sure you want to delete this beneficiary?</p>
+              {beneficiaryToDelete && (
+                <div className="mt-4 p-4 bg-muted rounded-lg border">
+                  <p className="font-semibold text-foreground mb-2">
+                    {beneficiaryToDelete.beneficiaryName}
+                  </p>
+                  <div className="space-y-1 text-sm">
+                    <p>
+                      <span className="text-muted-foreground">Bank:</span>{" "}
+                      <span className="text-foreground">{beneficiaryToDelete.bankName}</span>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Account:</span>{" "}
+                      <span className="text-foreground font-mono">{beneficiaryToDelete.accountNumber}</span>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">IFSC:</span>{" "}
+                      <span className="text-foreground font-mono">{beneficiaryToDelete.ifsc}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+              <p className="text-destructive font-medium">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pay Dialog */}
       <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>

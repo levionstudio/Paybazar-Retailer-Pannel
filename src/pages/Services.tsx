@@ -123,7 +123,7 @@ export default function Services() {
   status: "active",
   description: "Pay for your purchases using UPI",
   color: "bg-gradient-to-r from-purple-600 to-purple-400",
-  category: "upi",
+  category: "Upi",
   route: "/service",
 },
 

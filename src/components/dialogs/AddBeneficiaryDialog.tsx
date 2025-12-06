@@ -1,11 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -38,6 +49,14 @@ interface Bank {
   ifsc_code: string;
 }
 
+interface JWTPayload {
+  data: {
+    user_id?: string;
+    id?: string;
+    [key: string]: any;
+  };
+}
+
 export function AddBeneficiaryDialog({
   open,
   onOpenChange,
@@ -61,6 +80,21 @@ export function AddBeneficiaryDialog({
   const [isVerifying, setIsVerifying] = useState(false);
   const [bankSearchTerm, setBankSearchTerm] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+
+  // Get user_id from token
+  const getUserIdFromToken = (): string => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return "";
+      
+      const decoded = jwtDecode<JWTPayload>(token);
+      return decoded.data?.user_id || decoded.data?.id || "";
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      return "";
+    }
+  };
 
   // Fetch banks from API
   useEffect(() => {
@@ -110,6 +144,7 @@ export function AddBeneficiaryDialog({
       setSelectedBankIFSC("");
       setIsAccountVerified(false);
       setBankSearchTerm("");
+      setShowVerificationDialog(false);
     }
   }, [open]);
 
@@ -143,7 +178,7 @@ export function AddBeneficiaryDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleVerifyAccount = async () => {
+  const handleVerifyAccountClick = () => {
     if (!formData.ifsc || !formData.accountNumber) {
       setErrors({
         ...errors,
@@ -182,14 +217,25 @@ export function AddBeneficiaryDialog({
       return;
     }
 
+    // Show confirmation dialog
+    setShowVerificationDialog(true);
+  };
+
+  const handleVerifyAccount = async () => {
     try {
       setIsVerifying(true);
       setErrors({ ...errors, verify: "" });
       
       const token = localStorage.getItem("authToken");
+      const userId = getUserIdFromToken();
+
+      if (!userId) {
+        throw new Error("User ID not found. Please login again.");
+      }
       
+      // API URL format: /user/payout/:user_id/:phone_number/:account_number/:ifsc_code
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/user/payout/${mobileNumber}/${formData.accountNumber}/${formData.ifsc}`,
+        `${import.meta.env.VITE_API_BASE_URL}/user/payout/${userId}/${mobileNumber}/${formData.accountNumber}/${formData.ifsc}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -347,200 +393,231 @@ export function AddBeneficiaryDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-background border-border">
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-lg font-semibold tracking-wider">
-            ADD BENEFICIARY
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px] bg-background border-border">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-lg font-semibold tracking-wider">
+              ADD BENEFICIARY
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-          {/* Bank Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="bank" className="text-sm font-medium">
-              Select Bank
-            </Label>
-            <div className="relative">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-between text-left font-normal"
-                onClick={() => setIsSelectOpen(!isSelectOpen)}
-              >
-                <span className={formData.bank ? "" : "text-muted-foreground"}>
-                  {formData.bank || "--Select Bank--"}
-                </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-              
-              {/* Custom Dropdown */}
-              {isSelectOpen && (
-                <>
-                  {/* Backdrop */}
-                  <div
-                    className="fixed inset-0 z-40 bg-black/20"
-                    onClick={() => setIsSelectOpen(false)}
-                  />
-                  
-                  {/* Dropdown Content */}
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg z-50 max-h-[300px] flex flex-col">
-                    {/* Search Input - Always at top */}
-                    <div className="p-2 border-b border-border sticky top-0 bg-background">
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search bank..."
-                        className="h-9"
-                        type="text"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        style={{ fontSize: '16px' }}
-                        value={bankSearchTerm}
-                        onChange={(e) => setBankSearchTerm(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                          }
-                        }}
-                        autoFocus
-                      />
-                    </div>
+          <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+            {/* Bank Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="bank" className="text-sm font-medium">
+                Select Bank
+              </Label>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between text-left font-normal"
+                  onClick={() => setIsSelectOpen(!isSelectOpen)}
+                >
+                  <span className={formData.bank ? "" : "text-muted-foreground"}>
+                    {formData.bank || "--Select Bank--"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+                
+                {/* Custom Dropdown */}
+                {isSelectOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40 bg-black/20"
+                      onClick={() => setIsSelectOpen(false)}
+                    />
                     
-                    {/* Bank List - Scrollable */}
-                    <div className="overflow-y-auto max-h-[250px]">
-                      {loading ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          Loading banks...
-                        </div>
-                      ) : filteredBanks.length > 0 ? (
-                        filteredBanks.map((bank) => (
-                          <button
-                            key={bank.bank_name}
-                            type="button"
-                            className="w-full text-left px-4 py-3 hover:bg-muted transition-colors text-sm border-b border-border last:border-b-0"
-                            onClick={() => {
-                              handleBankChange(bank.bank_name);
-                              setIsSelectOpen(false);
-                              setBankSearchTerm("");
-                            }}
-                          >
-                            {bank.bank_name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          {bankSearchTerm ? "No banks match your search" : "No banks found"}
-                        </div>
-                      )}
+                    {/* Dropdown Content */}
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg z-50 max-h-[300px] flex flex-col">
+                      {/* Search Input - Always at top */}
+                      <div className="p-2 border-b border-border sticky top-0 bg-background">
+                        <Input
+                          ref={searchInputRef}
+                          placeholder="Search bank..."
+                          className="h-9"
+                          type="text"
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck="false"
+                          style={{ fontSize: '16px' }}
+                          value={bankSearchTerm}
+                          onChange={(e) => setBankSearchTerm(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                            }
+                          }}
+                          autoFocus
+                        />
+                      </div>
+                      
+                      {/* Bank List - Scrollable */}
+                      <div className="overflow-y-auto max-h-[250px]">
+                        {loading ? (
+                          <div className="p-4 text-center text-sm text-muted-foreground">
+                            Loading banks...
+                          </div>
+                        ) : filteredBanks.length > 0 ? (
+                          filteredBanks.map((bank) => (
+                            <button
+                              key={bank.bank_name}
+                              type="button"
+                              className="w-full text-left px-4 py-3 hover:bg-muted transition-colors text-sm border-b border-border last:border-b-0"
+                              onClick={() => {
+                                handleBankChange(bank.bank_name);
+                                setIsSelectOpen(false);
+                                setBankSearchTerm("");
+                              }}
+                            >
+                              {bank.bank_name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-sm text-muted-foreground">
+                            {bankSearchTerm ? "No banks match your search" : "No banks found"}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </>
+                  </>
+                )}
+              </div>
+              {errors.bank && (
+                <p className="text-red-500 text-xs">{errors.bank}</p>
               )}
             </div>
-            {errors.bank && (
-              <p className="text-red-500 text-xs">{errors.bank}</p>
-            )}
-          </div>
 
-          {/* IFSC */}
-          <div className="space-y-2">
-            <Label htmlFor="ifsc" className="text-sm font-medium">
-              IFSC
-            </Label>
-            <Input
-              id="ifsc"
-              type="text"
-              value={formData.ifsc}
-              onChange={handleIFSCChange}
-              placeholder="Enter IFSC"
-              className="uppercase"
-              maxLength={11}
-            />
-            {errors.ifsc && (
-              <p className="text-red-500 text-xs">{errors.ifsc}</p>
-            )}
-          </div>
-
-          {/* Account Number */}
-          <div className="space-y-2">
-            <Label htmlFor="accountNumber" className="text-sm font-medium">
-              Account Number
-            </Label>
-            <div className="flex gap-2 items-center">
+            {/* IFSC */}
+            <div className="space-y-2">
+              <Label htmlFor="ifsc" className="text-sm font-medium">
+                IFSC
+              </Label>
               <Input
-                id="accountNumber"
-                type="number"
-                inputMode="numeric"
-                value={formData.accountNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, accountNumber: e.target.value })
-                }
-                placeholder="Enter Account Number"
+                id="ifsc"
+                type="text"
+                value={formData.ifsc}
+                onChange={handleIFSCChange}
+                placeholder="Enter IFSC"
+                className="uppercase"
+                maxLength={11}
               />
+              {errors.ifsc && (
+                <p className="text-red-500 text-xs">{errors.ifsc}</p>
+              )}
+            </div>
+
+            {/* Account Number */}
+            <div className="space-y-2">
+              <Label htmlFor="accountNumber" className="text-sm font-medium">
+                Account Number
+              </Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="accountNumber"
+                  type="number"
+                  inputMode="numeric"
+                  value={formData.accountNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, accountNumber: e.target.value })
+                  }
+                  placeholder="Enter Account Number"
+                />
+                <Button
+                  type="button"
+                  onClick={handleVerifyAccountClick}
+                  disabled={isVerifying}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap disabled:opacity-50"
+                >
+                  {isVerifying ? "Verifying..." : "Verify A/C"}
+                </Button>
+              </div>
+              {errors.accountNumber && (
+                <p className="text-red-500 text-xs">{errors.accountNumber}</p>
+              )}
+              {errors.verify && (
+                <p className="text-red-500 text-xs">{errors.verify}</p>
+              )}
+              {isAccountVerified && !errors.verify && (
+                <p className="text-green-600 text-xs flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Account verified successfully
+                </p>
+              )}
+            </div>
+
+            {/* Beneficiary Name */}
+            <div className="space-y-2">
+              <Label htmlFor="beneficiaryName" className="text-sm font-medium">
+                Beneficiary Name
+              </Label>
+              <Input
+                id="beneficiaryName"
+                type="text"
+                value={formData.beneficiaryName}
+                onChange={(e) =>
+                  setFormData({ ...formData, beneficiaryName: e.target.value })
+                }
+                placeholder="Enter Beneficiary Name"
+              />
+              {errors.beneficiaryName && (
+                <p className="text-red-500 text-xs">{errors.beneficiaryName}</p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 type="button"
-                onClick={handleVerifyAccount}
-                disabled={isVerifying}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap disabled:opacity-50"
+                onClick={handleCancel}
+                variant="outline"
+                className="flex-1"
               >
-                {isVerifying ? "Verifying..." : "Verify A/C"}
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 paybazaar-gradient text-white"
+                disabled={isSubmitting || loading}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </div>
-            {errors.accountNumber && (
-              <p className="text-red-500 text-xs">{errors.accountNumber}</p>
-            )}
-            {errors.verify && (
-              <p className="text-red-500 text-xs">{errors.verify}</p>
-            )}
-            {isAccountVerified && !errors.verify && (
-              <p className="text-green-600 text-xs flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4" />
-                Account verified successfully
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Verification Confirmation Dialog */}
+      <AlertDialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Verify Account Number?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to verify this account number?</p>
+              <p className="font-semibold text-orange-600">
+                A verification charge of ₹3 will be deducted from your account.
               </p>
-            )}
-          </div>
-
-          {/* Beneficiary Name */}
-          <div className="space-y-2">
-            <Label htmlFor="beneficiaryName" className="text-sm font-medium">
-              Beneficiary Name
-            </Label>
-            <Input
-              id="beneficiaryName"
-              type="text"
-              value={formData.beneficiaryName}
-              onChange={(e) =>
-                setFormData({ ...formData, beneficiaryName: e.target.value })
-              }
-              placeholder="Enter Beneficiary Name"
-            />
-            {errors.beneficiaryName && (
-              <p className="text-red-500 text-xs">{errors.beneficiaryName}</p>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button
-              type="button"
-              onClick={handleCancel}
-              variant="outline"
-              className="flex-1"
-            >
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowVerificationDialog(false)}>
               Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 paybazaar-gradient text-white"
-              disabled={isSubmitting || loading}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowVerificationDialog(false);
+                handleVerifyAccount();
+              }}
+              className="bg-red-600 hover:bg-red-700"
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+              Yes, Verify
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

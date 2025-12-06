@@ -24,7 +24,6 @@ import MyCommission from "./pages/Commission";
 import RequestFunds from "./pages/fundRequest";
 import GetFundRequests from "./pages/requestedFund";
 import UserWalletTransactions from "./pages/accounthistory";
-import PayoutRequest from "./pages/payout";
 import Settlement from "./pages/settlement";
 import UserPayouts from "./pages/UserPayouts";
 import ReceiptPage from "./pages/Receipt";
@@ -61,7 +60,6 @@ const App = () => (
               <Route path="/commission" element={<MyCommission />} />
               <Route path="/funds" element={<GetFundRequests />} />
               <Route path="/transactions" element={<UserWalletTransactions />} />
-              <Route path="/payout" element={<PayoutRequest />} />
               <Route path="/settlement" element={<Settlement />} />
               <Route path="/reports" element={<UserPayouts />} />
               <Route path="/receipt/:transactionId" element={<ReceiptPage />} />
