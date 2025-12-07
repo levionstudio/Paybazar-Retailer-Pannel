@@ -232,7 +232,7 @@ export default function ReceiptPage() {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(13, 49, 84);
     doc.text(
-      `${parseFloat(transaction.amount).toLocaleString("en-IN", {
+      `₹${parseFloat(transaction.amount).toLocaleString("en-IN", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
@@ -244,15 +244,6 @@ export default function ReceiptPage() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
-    // doc.text(
-    //   `${parseFloat(transaction.commission).toLocaleString("en-IN", {
-    //     minimumFractionDigits: 2,
-    //     maximumFractionDigits: 2,
-    //   })}`,
-    //   benefCol3,
-    //   yPosition,
-    //   { align: "center" }
-    // );
     
     // Footer
     yPosition = pageHeight - 30;
@@ -350,7 +341,7 @@ export default function ReceiptPage() {
                       <span className="text-sm font-semibold text-slate-600">
                         Transaction ID:
                       </span>
-                      <span className="text-sm font-mono font-semibold text-slate-900">
+                      <span className="text-sm font-mono font-bold text-black">
                         {transaction.transaction_id}
                       </span>
                     </div>
@@ -358,7 +349,7 @@ export default function ReceiptPage() {
                       <span className="text-sm font-semibold text-slate-600">
                         Date & Time:
                       </span>
-                      <span className="text-sm text-slate-900">
+                      <span className="text-sm font-semibold text-black">
                         {formatDate(transaction.transaction_date_and_time)}
                       </span>
                     </div>
@@ -367,7 +358,7 @@ export default function ReceiptPage() {
                         Status:
                       </span>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
                           transaction.transaction_status === "SUCCESS"
                             ? "bg-green-600 text-white"
                             : transaction.transaction_status === "FAILED"
@@ -390,7 +381,7 @@ export default function ReceiptPage() {
                         <span className="text-sm font-semibold text-slate-600 block mb-1">
                           Beneficiary Name:
                         </span>
-                        <span className="text-sm text-slate-900">
+                        <span className="text-sm font-bold text-black">
                           {transaction.beneficiary_name}
                         </span>
                       </div>
@@ -398,7 +389,7 @@ export default function ReceiptPage() {
                         <span className="text-sm font-semibold text-slate-600 block mb-1">
                           Bank Name:
                         </span>
-                        <span className="text-sm text-slate-900">
+                        <span className="text-sm font-bold text-black">
                           {transaction.bank_name}
                         </span>
                       </div>
@@ -406,7 +397,7 @@ export default function ReceiptPage() {
                         <span className="text-sm font-semibold text-slate-600 block mb-1">
                           Phone Number:
                         </span>
-                        <span className="text-sm text-slate-900 font-mono">
+                        <span className="text-sm font-mono font-bold text-black">
                           {transaction.phone_number}
                         </span>
                       </div>
@@ -423,7 +414,7 @@ export default function ReceiptPage() {
                         <span className="text-sm font-semibold text-slate-600 block mb-1">
                           Transfer Type:
                         </span>
-                        <span className="text-sm text-slate-900">
+                        <span className="text-sm font-bold text-black">
                           {transaction.transfer_type}
                         </span>
                       </div>
@@ -431,18 +422,17 @@ export default function ReceiptPage() {
                         <span className="text-sm font-semibold text-slate-600 block mb-1">
                           Amount:
                         </span>
-                        <span className="text-lg font-bold text-slate-900">
+                        <span className="text-xl font-bold text-black">
                           ₹{parseFloat(transaction.amount).toLocaleString("en-IN", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </span>
                       </div>
-                      
                     </div>
                   </div>
 
-                  {/* Footer Note */}
+                  Footer Note
                   <div className="text-center pt-4 border-t border-slate-200">
                     <p className="text-xs text-slate-500">
                       This is a computer-generated receipt.
@@ -460,4 +450,3 @@ export default function ReceiptPage() {
     </div>
   );
 }
-

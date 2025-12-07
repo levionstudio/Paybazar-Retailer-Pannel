@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, FileText, Receipt, Download, Printer, X } from "lucide-react";
+import { ArrowLeft, FileText, Receipt, Download, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
@@ -124,7 +124,7 @@ export default function UserPayouts() {
         const sortedTransactions = response.data.data.transactions.sort((a: Transaction, b: Transaction) => {
           const dateA = new Date(a.transaction_date_and_time).getTime();
           const dateB = new Date(b.transaction_date_and_time).getTime();
-          return dateB - dateA; // Descending order (latest first)
+          return dateB - dateA;
         });
         setAllTransactions(sortedTransactions);
         setTransactions(sortedTransactions);
@@ -332,15 +332,11 @@ export default function UserPayouts() {
               margin: 0 auto;
               background: white;
             }
-            /* Match the exact styles from the receipt */
             .border-b-2 {
               border-bottom: 2px solid #e5e7eb;
             }
             .border-b {
               border-bottom: 1px solid #e5e7eb;
-            }
-            .border-t {
-              border-top: 1px solid #e5e7eb;
             }
             .border-t-2 {
               border-top: 2px solid #e5e7eb;
@@ -350,20 +346,18 @@ export default function UserPayouts() {
             }
             .font-bold {
               font-weight: 700;
+              color: #000000;
             }
             .font-semibold {
               font-weight: 600;
-            }
-            .font-medium {
-              font-medium: 500;
             }
             .text-3xl {
               font-size: 1.875rem;
               line-height: 2.25rem;
             }
-            .text-xl {
-              font-size: 1.25rem;
-              line-height: 1.75rem;
+            .text-2xl {
+              font-size: 1.5rem;
+              line-height: 2rem;
             }
             .text-lg {
               font-size: 1.125rem;
@@ -376,6 +370,9 @@ export default function UserPayouts() {
             .text-xs {
               font-size: 0.75rem;
               line-height: 1rem;
+            }
+            .text-black {
+              color: #000000 !important;
             }
             .text-gray-800 {
               color: #1f2937;
@@ -393,13 +390,13 @@ export default function UserPayouts() {
               color: #9ca3af;
             }
             .text-green-600 {
-              color: #16a34a;
+              color: #16a34a !important;
             }
             .text-red-600 {
-              color: #dc2626;
+              color: #dc2626 !important;
             }
             .text-yellow-600 {
-              color: #ca8a04;
+              color: #ca8a04 !important;
             }
             .bg-gray-50 {
               background-color: #f9fafb;
@@ -430,17 +427,14 @@ export default function UserPayouts() {
               padding-top: 0.5rem;
               padding-bottom: 0.5rem;
             }
-            .pt-2 {
-              padding-top: 0.5rem;
+            .pb-6 {
+              padding-bottom: 1.5rem;
             }
             .pt-6 {
               padding-top: 1.5rem;
             }
             .pb-4 {
               padding-bottom: 1rem;
-            }
-            .pb-6 {
-              padding-bottom: 1.5rem;
             }
             .mb-1 {
               margin-bottom: 0.25rem;
@@ -453,9 +447,6 @@ export default function UserPayouts() {
             }
             .mb-6 {
               margin-bottom: 1.5rem;
-            }
-            .space-y-2 > * + * {
-              margin-top: 0.5rem;
             }
             .space-y-4 > * + * {
               margin-top: 1rem;
@@ -480,6 +471,7 @@ export default function UserPayouts() {
             }
             .font-mono {
               font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+              color: #000000;
             }
           </style>
         </head>
@@ -796,7 +788,7 @@ export default function UserPayouts() {
               <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
-                  <p className="text-lg font-mono font-semibold">
+                  <p className="text-lg font-mono font-bold text-black">
                     {selectedTransaction.transaction_id}
                   </p>
                 </div>
@@ -818,35 +810,35 @@ export default function UserPayouts() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Date & Time</p>
-                    <p className="font-medium">
+                    <p className="font-bold text-black">
                       {formatDate(selectedTransaction.transaction_date_and_time)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Transfer Type</p>
-                    <p className="font-medium">{selectedTransaction.transfer_type}</p>
+                    <p className="font-bold text-black">{selectedTransaction.transfer_type}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Phone Number</p>
-                    <p className="font-medium font-mono">{selectedTransaction.phone_number}</p>
+                    <p className="font-bold text-black font-mono">{selectedTransaction.phone_number}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Bank Name</p>
-                    <p className="font-medium">{selectedTransaction.bank_name}</p>
+                    <p className="font-bold text-black">{selectedTransaction.bank_name}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Beneficiary Name</p>
-                    <p className="font-medium">{selectedTransaction.beneficiary_name}</p>
+                    <p className="font-bold text-black">{selectedTransaction.beneficiary_name}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Account Number</p>
-                    <p className="font-medium font-mono">{selectedTransaction.account_number}</p>
+                    <p className="font-bold text-black font-mono">{selectedTransaction.account_number}</p>
                   </div>
                 </div>
               </div>
@@ -858,7 +850,7 @@ export default function UserPayouts() {
                 </h2>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Transfer Amount</span>
-                  <span className="text-xl font-bold text-gray-800">
+                  <span className="text-2xl font-bold text-black">
                     ₹{formatAmount(selectedTransaction.amount)}
                   </span>
                 </div>

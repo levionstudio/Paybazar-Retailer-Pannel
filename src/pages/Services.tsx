@@ -3,16 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeftRight,
-  CreditCard,
   FileText,
   Fingerprint,
   Smartphone,
-  Wallet,
   Search,
   Landmark,
-  Bus,
   BusIcon,
-  UploadCloudIcon,
   IndianRupee,
 } from "lucide-react";
 import { useState } from "react";
