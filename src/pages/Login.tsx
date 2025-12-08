@@ -256,7 +256,7 @@ export default function Login() {
               </CardTitle>
               <CardDescription className="text-slate-600 text-base font-medium">
                 {step === "phone"
-                  ? "We’ll send you an OTP to login"
+                  ? "We'll send you an OTP to login"
                   : "Check your SMS for the OTP"}
               </CardDescription>
             </CardHeader>
@@ -356,11 +356,22 @@ export default function Login() {
             </CardContent>
           </Card>
 
-          {/* Footer Credit */}
-          <div className="text-center mt-8">
+          {/* Footer */}
+          <div className="text-center space-y-3">
+            <p className="text-xs text-slate-500">
+              Are you a distributor?{" "}
+              <a 
+                href="https://distributor.paybazaar.in" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[#0d3154] font-semibold hover:underline"
+              >
+                Login here
+              </a>
+            </p>
             <p className="text-xs text-slate-500">
               Designed and developed by{" "}
-              <a href="https://gvinfotech.org/" target="_blank"  className="font-semibold text-slate-700">GV Infotech</a>
+              <a href="https://gvinfotech.org/" target="_blank" className="font-semibold text-slate-700">GV Infotech</a>
             </p>
           </div>
         </div>
