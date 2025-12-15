@@ -653,9 +653,9 @@ export default function UserPayouts() {
                             <TableCell className="text-center font-semibold py-4">
                               ₹{formatAmount(transaction.amount)}
                             </TableCell>
-                            <TableCell className="text-center font-semibold py-4">
-                              ₹{formatAmount(transaction.commission)}
-                            </TableCell>
+                          <TableCell className="text-center font-semibold py-4">
+                              ₹{formatAmount((Number(transaction.commission) || 0) / 2)}
+                            </TableCell>                           
                             <TableCell className="text-center py-4">
                               {transaction.transfer_type}
                             </TableCell>
