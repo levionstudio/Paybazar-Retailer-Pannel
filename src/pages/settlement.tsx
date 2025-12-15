@@ -182,7 +182,10 @@ export default function Settlement() {
     if (showSuccessAnimation && transactionId) {
       const timer = setTimeout(() => {
         setShowSuccessAnimation(false);
-        navigate(`/receipt/${transactionId}`);
+        // Store in localStorage as backup in case navigation state is lost
+        localStorage.setItem('autoOpenReceipt', transactionId);
+        // Navigate to reports with transaction ID to auto-open receipt
+        navigate('/reports', { state: { openReceiptFor: transactionId } });
       }, 3500); // 3.5 seconds
 
       return () => clearTimeout(timer);
@@ -1120,7 +1123,14 @@ export default function Settlement() {
               className="paybazaar-gradient text-white"
               disabled={loading}
             >
-              {loading ? "Processing..." : "Submit"}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Processing</span>
+                </div>
+              ) : (
+                "Submit"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1287,7 +1297,14 @@ export default function Settlement() {
                 className="flex-1 paybazaar-gradient text-white hover:opacity-90"
                 disabled={loading}
               >
-                {loading ? "Submitting..." : "Submit"}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Processing</span>
+                  </div>
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </DialogFooter>
           </form>

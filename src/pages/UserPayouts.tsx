@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ArrowLeft, FileText, Receipt, Download, Printer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
@@ -54,6 +54,7 @@ interface TokenData {
 
 export default function UserPayouts() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -101,6 +102,41 @@ export default function UserPayouts() {
       fetchTransactions();
     }
   }, [userId]);
+
+  // Auto-open receipt if navigated from settlement with transaction ID
+  useEffect(() => {
+    // Check navigation state first
+    const state = location.state as { openReceiptFor?: string };
+    const txnIdFromState = state?.openReceiptFor;
+    
+    // Check localStorage as backup (in case state is lost)
+    const txnIdFromStorage = localStorage.getItem('autoOpenReceipt');
+    
+    const txnIdToOpen = txnIdFromState || txnIdFromStorage;
+    
+    if (txnIdToOpen && allTransactions.length > 0) {
+      // Find the transaction
+      const transaction = allTransactions.find(
+        (txn) => txn.transaction_id === txnIdToOpen
+      );
+      
+      if (transaction) {
+        // Small delay to ensure component is ready
+        setTimeout(() => {
+          setSelectedTransaction(transaction);
+          setIsReceiptOpen(true);
+          console.log("✅ Auto-opened receipt for transaction:", txnIdToOpen);
+          
+          // Clean up
+          localStorage.removeItem('autoOpenReceipt');
+          window.history.replaceState({}, document.title);
+        }, 500);
+      } else {
+        console.log("⏳ Transaction not found yet:", txnIdToOpen);
+        console.log("Available transactions:", allTransactions.map(t => t.transaction_id));
+      }
+    }
+  }, [location.state, allTransactions]);
 
   const fetchTransactions = async () => {
     if (!userId) return;
