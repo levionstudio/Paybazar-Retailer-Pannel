@@ -98,6 +98,10 @@ export default function Settlement() {
   const [showMpinVerificationDialog, setShowMpinVerificationDialog] = useState(false);
   const [verifiedMpin, setVerifiedMpin] = useState("");
   const [mpinVerificationError, setMpinVerificationError] = useState<string | null>(null);
+  
+  // Success animation states
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
 
   const [payFormData, setPayFormData] = useState({
     transactionType: "",
@@ -172,6 +176,18 @@ export default function Settlement() {
 
     checkMpinStatus();
   }, []);
+
+  // Handle success animation and navigation
+  useEffect(() => {
+    if (showSuccessAnimation && transactionId) {
+      const timer = setTimeout(() => {
+        setShowSuccessAnimation(false);
+        navigate(`/receipt/${transactionId}`);
+      }, 3500); // 3.5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessAnimation, transactionId, navigate]);
 
   const handleLogin = async () => {
     if (!payoutPhoneNumber) {
@@ -514,10 +530,8 @@ export default function Settlement() {
       setLoading(true);
       const token = localStorage.getItem("authToken");
       
-      // Use same payload structure as payout.tsx
-      // Fix: get user_id from decoded auth token
+      // Get user_id from decoded auth token
       const authToken = localStorage.getItem("authToken");
-      // Decode the JWT token to get user_id (phone number)
       const base64Url = authToken?.split('.')[1];
       const base64 = base64Url ? base64Url.replace(/-/g, '+').replace(/_/g, '/') : '';
       const decodedToken = base64 ? JSON.parse(atob(base64)) : {};
@@ -549,7 +563,6 @@ export default function Settlement() {
         mpin: verifiedMpin,
       };
 
-
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/user/payout`,
         payload,
@@ -561,12 +574,21 @@ export default function Settlement() {
         }
       );
 
-      toast({
-        title: "Success",
-        description: response.data.message || "Payout request submitted successfully",
-      });
+      // Extract transaction ID from response
+      const txnId = response.data?.data?.transaction_id || 
+                    response.data?.data?.txn_id || 
+                    response.data?.transaction_id ||
+                    response.data?.txn_id ||
+                    Date.now().toString(); // Fallback
 
+      // Close pay dialog
       setShowPayDialog(false);
+      
+      // Show success animation
+      setTransactionId(txnId);
+      setShowSuccessAnimation(true);
+      
+      // Reset form
       setPayFormData({
         transactionType: "",
         amount: "",
@@ -878,6 +900,56 @@ export default function Settlement() {
           </div>
         </main>
       </div>
+
+      {/* Success Animation Overlay */}
+      {showSuccessAnimation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative">
+            {/* Celebration particles */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-ping"
+                  style={{
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: '1.5s',
+                    left: `${50 + 40 * Math.cos((i * Math.PI * 2) / 12)}%`,
+                    top: `${50 + 40 * Math.sin((i * Math.PI * 2) / 12)}%`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Main success card */}
+            <div className="relative bg-white rounded-3xl shadow-2xl p-12 max-w-md mx-4 animate-scale-in">
+              {/* Checkmark circle */}
+              <div className="relative mx-auto w-32 h-32 mb-6">
+                {/* Outer ring animation */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 animate-pulse" />
+                
+                {/* Inner circle */}
+                <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
+                  <CheckCircle2 
+                    className="w-20 h-20 text-green-500 animate-check-draw" 
+                    strokeWidth={3}
+                  />
+                </div>
+              </div>
+
+              {/* Success text */}
+              <div className="text-center space-y-3">
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Success!
+                </h2>
+                <p className="text-lg text-gray-600">
+                  Payout completed successfully
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Beneficiary Dialog */}
       <AddBeneficiaryDialog
@@ -1221,6 +1293,39 @@ export default function Settlement() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <style>{`
+        @keyframes scale-in {
+          0% {
+            transform: scale(0.5);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes check-draw {
+          0% {
+            stroke-dasharray: 0 100;
+          }
+          100% {
+            stroke-dasharray: 100 100;
+          }
+        }
+
+        .animate-scale-in {
+          animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animate-check-draw {
+          animation: check-draw 0.8s ease-in-out 0.3s forwards;
+        }
+      `}</style>
     </div>
   );
 }

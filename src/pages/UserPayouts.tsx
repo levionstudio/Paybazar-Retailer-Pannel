@@ -781,7 +781,7 @@ export default function UserPayouts() {
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">
                   TRANSACTION RECEIPT
                 </h1>
-                <p className="text-sm text-gray-500">PayBazaar Payment Services</p>
+                <p className="text-sm text-gray-500">Paybazaar Technologies Pvt. Ltd.</p>
               </div>
 
               {/* Transaction Status */}
