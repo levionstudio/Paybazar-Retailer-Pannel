@@ -125,15 +125,12 @@ export default function UserPayouts() {
         setTimeout(() => {
           setSelectedTransaction(transaction);
           setIsReceiptOpen(true);
-          console.log("✅ Auto-opened receipt for transaction:", txnIdToOpen);
           
           // Clean up
           localStorage.removeItem('autoOpenReceipt');
           window.history.replaceState({}, document.title);
         }, 500);
       } else {
-        console.log("⏳ Transaction not found yet:", txnIdToOpen);
-        console.log("Available transactions:", allTransactions.map(t => t.transaction_id));
       }
     }
   }, [location.state, allTransactions]);
@@ -156,7 +153,6 @@ export default function UserPayouts() {
       );
 
       if (response.data.status === "success" && response.data.data?.transactions) {
-        // Sort transactions by date in descending order (latest first)
         const sortedTransactions = response.data.data.transactions.sort((a: Transaction, b: Transaction) => {
           const dateA = new Date(a.transaction_date_and_time).getTime();
           const dateB = new Date(b.transaction_date_and_time).getTime();

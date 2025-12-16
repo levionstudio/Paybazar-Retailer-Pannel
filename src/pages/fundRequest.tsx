@@ -227,7 +227,6 @@ const RequestFunds = () => {
 
     try {
       setLoading(true);
-      console.log(payload);
       toast({
         title: "Submitting Request",
         description: "Please wait while we process your fund request...",
@@ -452,6 +451,7 @@ const RequestFunds = () => {
                     aria-label="Fund request form"
                   >
                     <div className="grid grid-cols-2 gap-6">
+                      {/* Bank Name Dropdown */}
                       <div className="space-y-2">
                         <Label
                           htmlFor="bank_name"
@@ -459,17 +459,31 @@ const RequestFunds = () => {
                         >
                           Bank Name <span className="text-destructive">*</span>
                         </Label>
-                        <Input
-                          id="bank_name"
-                          type="text"
+                        <Select
                           value={formData.bank_name}
-                          onChange={handleChange}
-                          className="h-12 border-2 border-border focus:border-primary transition-colors bg-background uppercase"
-                          placeholder="Enter Bank Name"
-                          maxLength={50}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({ ...prev, bank_name: value }))
+                          }
                           required
-                          aria-required="true"
-                        />
+                        >
+                          <SelectTrigger className="h-12 border-2 border-border focus:border-primary transition-colors bg-background">
+                            <SelectValue placeholder="Select Bank" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="State Bank of India">State Bank of India</SelectItem>
+                            <SelectItem value="HDFC">HDFC</SelectItem>
+                            <SelectItem value="AU Bank">AU Bank</SelectItem>
+                            <SelectItem value="Ujjivan Bank">Ujjivan Bank</SelectItem>
+                            <SelectItem value="IDFC">IDFC</SelectItem>
+                            <SelectItem value="Kotak">Kotak</SelectItem>
+                            <SelectItem value="Indusland Bank">Indusland Bank</SelectItem>
+                            <SelectItem value="RBL">RBL</SelectItem>
+                            <SelectItem value="Axis Bank">Axis Bank</SelectItem>
+                            <SelectItem value="ICICI">ICICI</SelectItem>
+                            <SelectItem value="Advance Credit">Advance Credit</SelectItem>
+                            <SelectItem value="Yes Bank">Yes Bank</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Deposite Date */}
