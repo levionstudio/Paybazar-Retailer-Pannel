@@ -135,6 +135,26 @@ export default function UserPayouts() {
     }
   }, [location.state, allTransactions]);
 
+const ONE_PERCENT_USERS = new Set([
+  "fca6741b-e405-4c06-9ebb-3f1e9951c22c",
+  "df2704ad-7cb1-4b28-a29d-866dfdded0ae",
+]);
+
+
+const getRetailerCommission = (transaction: Transaction) => {
+  const amount = Number(transaction.amount);
+
+
+  const commissionRate = ONE_PERCENT_USERS.has(userId ?? "")
+    ? 0.01   
+    : 0.012; 
+
+  const totalCommission = amount * commissionRate;
+  return totalCommission * 0.5;
+};
+
+
+
   const fetchTransactions = async () => {
     if (!userId) return;
 
@@ -153,6 +173,7 @@ export default function UserPayouts() {
       );
 
       if (response.data.status === "success" && response.data.data?.transactions) {
+        console.log(response.data.data.transactions);
         const sortedTransactions = response.data.data.transactions.sort((a: Transaction, b: Transaction) => {
           const dateA = new Date(a.transaction_date_and_time).getTime();
           const dateB = new Date(b.transaction_date_and_time).getTime();
@@ -523,6 +544,9 @@ export default function UserPayouts() {
       </html>
     `);
     printWindow.document.close();
+
+
+
   };
 
   return (
@@ -686,8 +710,9 @@ export default function UserPayouts() {
                               ₹{formatAmount(transaction.amount)}
                             </TableCell>
                           <TableCell className="text-center font-semibold py-4">
-                              ₹{formatAmount((Number(transaction.commission) || 0) / 2)}
-                            </TableCell>                           
+                  ₹{formatAmount(getRetailerCommission(transaction).toString())}
+              </TableCell>
+                          
                             <TableCell className="text-center py-4">
                               {transaction.transfer_type}
                             </TableCell>
