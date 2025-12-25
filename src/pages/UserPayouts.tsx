@@ -134,23 +134,52 @@ export default function UserPayouts() {
       }
     }
   }, [location.state, allTransactions]);
+// 14 Users with 1% commission - Retailer gets 50% (0.50)
+// Commission split: 0.50 (retailer) + 0.25 (admin) + 0.20 (distributor) + 0.05 (MD) = 1.00
+const FOURTEEN_USERS_ONE_PERCENT = new Set([
+  "6e0e1dd1-7c4b-4ec0-9a04-2096d2273ff2",
+  "ef9d9491-3024-4f39-8e42-28e20203a004",
+  "a5e61077-418a-4792-8247-fae90e9d4a8d",
+  "b1bb7498-5d1b-451c-b0b7-83f24a113176",
+  "0b46af0c-8214-4eff-abec-b33e10fdab1e",
+  "9859a173-2077-4a7a-8986-b4291f5f7962",
+  "c2976d45-9399-4eca-b0ed-79288348d3a7",
+  "4e50045d-063a-40a9-8c6d-020223aef026",
+  "1aa47bf8-8ec0-4946-a850-b168079d04f1",
+  "c7b5df40-88b0-4313-846f-be18798d1444",
+  "40b51345-dbf7-4d37-8465-4746fdf0a8a8",
+  "86222148-772a-4372-8b89-8e63fdee85af",
+  "ca36d7a2-b713-4997-88e1-7512d6365650",
+  "d15329eb-1019-4f39-8e42-28e20203a004",
 
-const ONE_PERCENT_USERS = new Set([
-  "fca6741b-e405-4c06-9ebb-3f1e9951c22c",
+
+]);
+
+// 2 Special Users with 1% commission - Retailer gets 45% (0.45)
+// Commission split: 0.45 (retailer) + 0.25 (admin) + 0.20 (distributor) + 0.10 (MD) = 1.00
+// These users have higher MD commission (0.10 instead of 0.05), so retailer gets less
+const TWO_SPECIAL_USERS_ONE_PERCENT = new Set([
+  "fca6741b-e405-4c06-9ebb-3f1e9951c22c", // Ravi Ramawadh Prajapati
   "df2704ad-7cb1-4b28-a29d-866dfdded0ae",
 ]);
 
-
 const getRetailerCommission = (transaction: Transaction) => {
-  const amount = Number(transaction.amount);
-
-
-  const commissionRate = ONE_PERCENT_USERS.has(userId ?? "")
-    ? 0.01   
-    : 0.012; 
-
-  const totalCommission = amount * commissionRate;
-  return totalCommission * 0.5;
+  const totalCommission = Number(transaction.commission);
+  
+  // Check which user group this belongs to
+  if (TWO_SPECIAL_USERS_ONE_PERCENT.has(userId ?? "")) {
+    // 2 Special users: Retailer gets 45% of total commission
+    // Example: ₹100 transaction → ₹1.00 commission → Retailer gets ₹0.45
+    return totalCommission * 0.45;
+  } else if (FOURTEEN_USERS_ONE_PERCENT.has(userId ?? "")) {
+    // 14 users with 1% commission: Retailer gets 50% of total commission
+    // Example: ₹100 transaction → ₹1.00 commission → Retailer gets ₹0.50
+    return totalCommission * 0.50;
+  } else {
+    // All other users with 1.2% commission: Retailer gets 50% of total commission
+    // Example: ₹100 transaction → ₹1.20 commission → Retailer gets ₹0.60
+    return totalCommission * 0.50;
+  }
 };
 
 
