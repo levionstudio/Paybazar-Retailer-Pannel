@@ -136,10 +136,37 @@ export default function UserPayouts() {
   }, [location.state, allTransactions]);
 // 14 Users with 1% commission - Retailer gets 50% (0.50)
 // Commission split: 0.50 (retailer) + 0.25 (admin) + 0.20 (distributor) + 0.05 (MD) = 1.00
-const FOURTEEN_USERS_ONE_PERCENT = new Set([
+const THIRTY_NINE_USERS_ONE_PERCENT = new Set<string>([
+  // ---- 25 users from DB ----
+  "9abc983a-6751-4578-b091-782c20ca518c",
+  "588f08ba-99c0-45d4-ad10-3e0ba2f0f5ba",
+  "3038eb4b-df7e-40d7-806a-5b0e93e51e33",
+  "d20d9650-6ddf-45bf-9267-01795e8301f3",
+  "10161525-f8b6-4e09-9378-c8320c597c35",
+  "8522a1a8-7e2e-43f2-8b89-0e63fdee85af",
+  "e0edcd84-0783-4bbb-943f-7d50471d402c",
+  "ca36d7a2-9f13-4997-88e1-7512d6355650",
+  "3e222ad0-33a0-4822-9f87-8c392ecb5cec",
+  "5a5d9433-b2de-4d4c-a2ce-ef984b0fa3c1",
+  "d25f700d-9186-4f4a-a410-8be16ee3ea35",
+  "75e33916-4339-4f91-b2e3-6800a14da56f",
+  "ea3b2b66-3042-4e1f-8aca-7c037dc70cc6",
+  "6ede16d1-7c4b-4cc0-9a04-2896d2273ff2",
+  "ef9d9491-3024-4f39-8e42-28e20203e004",
+  "a5e61077-418a-4792-8247-fae90e9d4a8d",
+  "b1bb7498-561b-451c-b0b7-83f24a113175",
+  "0b45ef0c-8214-4eff-abec-b33e10fdab1e",
+  "e081e9b5-2674-4c76-8fe4-d7e97ed9c76e",
+  "9059e173-207f-4a7a-8986-b4291f5f9862",
+  "c2576845-9399-4eca-b0ed-792883403ea7",
+  "4c80845d-063a-40e9-8c5d-820223aefd25",
+  "1aad7bf8-dce8-4946-a050-b160079d04f1",
+  "c7856f40-de06-4313-845f-be18730d1e46",
+  "0ee30163-b777-4db8-a54f-968fd6334cda",
+
+  // ---- previous 14 users ----
   "6e0e1dd1-7c4b-4ec0-9a04-2096d2273ff2",
   "ef9d9491-3024-4f39-8e42-28e20203a004",
-  "a5e61077-418a-4792-8247-fae90e9d4a8d",
   "b1bb7498-5d1b-451c-b0b7-83f24a113176",
   "0b46af0c-8214-4eff-abec-b33e10fdab1e",
   "9859a173-2077-4a7a-8986-b4291f5f7962",
@@ -151,9 +178,8 @@ const FOURTEEN_USERS_ONE_PERCENT = new Set([
   "86222148-772a-4372-8b89-8e63fdee85af",
   "ca36d7a2-b713-4997-88e1-7512d6365650",
   "d15329eb-1019-4f39-8e42-28e20203a004",
-
-
 ]);
+
 
 // 2 Special Users with 1% commission - Retailer gets 45% (0.45)
 // Commission split: 0.45 (retailer) + 0.25 (admin) + 0.20 (distributor) + 0.10 (MD) = 1.00
@@ -171,7 +197,7 @@ const getRetailerCommission = (transaction: Transaction) => {
     // 2 Special users: Retailer gets 45% of total commission
     // Example: ₹100 transaction → ₹1.00 commission → Retailer gets ₹0.45
     return totalCommission * 0.45;
-  } else if (FOURTEEN_USERS_ONE_PERCENT.has(userId ?? "")) {
+  } else if (THIRTY_NINE_USERS_ONE_PERCENT.has(userId ?? "")) {
     // 14 users with 1% commission: Retailer gets 50% of total commission
     // Example: ₹100 transaction → ₹1.00 commission → Retailer gets ₹0.50
     return totalCommission * 0.50;
