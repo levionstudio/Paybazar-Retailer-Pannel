@@ -1088,7 +1088,6 @@ export default function Settlement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="IMPS">IMPS</SelectItem>
-                    <SelectItem value="NEFT">NEFT</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
