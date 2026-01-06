@@ -163,6 +163,23 @@ const THIRTY_NINE_USERS_ONE_PERCENT = new Set<string>([
   "1aad7bf8-dce8-4946-a050-b160079d04f1",
   "c7856f40-de06-4313-845f-be18730d1e46",
   "0ee30163-b777-4db8-a54f-968fd6334cda",
+  
+  "912bfe33-cc18-42a9-95e5-6601e9792d2e",
+  "e97abd42-3602-47e7-86c1-941849d5bfc7",
+  "cf315988-3a63-4e3e-a043-b82e29645a27",
+  "087adc59-29a6-40ee-9143-80d811e37691",
+  "44ca46d-b7aa-4075-8cc9-c5b1c728af51",
+  "cbc50485-4ff4-4670-bd00-d01071c0d44a",
+  "141a55fd-f8d6-4bb9-b079-7e33a0f4c103",
+  "71ebb8f6-9725-4b29-ab8d-2e18e905da0a",
+  "85f1bd2a-aa1a-4005-b19c-8423a0746789",
+  "91da3ca8-aa20-4584-9149-c2ebd624dcd7",
+
+
+
+
+
+
 
   // ---- previous 14 users ----
   "6e0e1dd1-7c4b-4ec0-9a04-2096d2273ff2",
