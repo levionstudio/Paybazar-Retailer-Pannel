@@ -48,7 +48,7 @@ const mainMenu = [
 
 const historyMenu = [
   { title: "Account History", href: "/transactions", icon: History },
-  { title: "Service Report", href: "/service-report", icon: Receipt },
+  { title: "Service Report", href: "/ledger", icon: Receipt },
 ];
 
 const bottomMenu = [

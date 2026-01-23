@@ -567,7 +567,7 @@ export default function Settlement() {
       };
 
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/user/payout`,
+        "http://server.paybazaar.in:8000/user/payout",
         payload,
         {
           headers: {

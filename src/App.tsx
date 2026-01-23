@@ -29,6 +29,7 @@ import UserPayouts from "./pages/UserPayouts";
 import ReceiptPage from "./pages/Receipt";
 import { Settings } from "lucide-react";
 import ChangePasswordMpin from "./pages/settings";
+import Ledger from "./pages/Ledger";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="/reports" element={<UserPayouts />} />
               <Route path="/receipt/:transactionId" element={<ReceiptPage />} />
               <Route path="/settings" element={<ChangePasswordMpin />} />
+              <Route path="/ledger" element={<Ledger/>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
