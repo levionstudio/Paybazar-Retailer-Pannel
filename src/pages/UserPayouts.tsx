@@ -138,6 +138,7 @@ export default function UserPayouts() {
 // Commission split: 0.50 (retailer) + 0.25 (admin) + 0.20 (distributor) + 0.05 (MD) = 1.00
 const THIRTY_NINE_USERS_ONE_PERCENT = new Set<string>([
   // ---- 25 users from DB ----
+  
   "9abc983a-6751-4578-b091-782c20ca518c",
   "588f08ba-99c0-45d4-ad10-3e0ba2f0f5ba",
   "3038eb4b-df7e-40d7-806a-5b0e93e51e33",
@@ -199,6 +200,25 @@ const THIRTY_NINE_USERS_ONE_PERCENT = new Set<string>([
   "ca36d7a2-b713-4997-88e1-7512d6365650",
   "d15329eb-1019-4f39-8e42-28e20203a004",
 ]);
+// ===== USER COMMISSION CONFIG (ADDED) =====
+
+const USER_COMMISSION_MAP = new Map<string, number>([
+  // user_commision = 0.60
+  ["912bfe33-cc18-42a9-95e5-6601e9792d2e", 0.60],
+  ["e97abd42-3602-47e7-86c1-941849d5bfc7", 0.60],
+
+  // user_commision = 0.50
+  ["b1c09449-d5d1-49af-b4fa-319267b07ce2", 0.50],
+  ["6e8affb2-009d-4389-9fb9-384f90a3404c", 0.50],
+  ["90600cca-e776-4373-8bf2-3f19fdcc0cc4", 0.50],
+  ["6ef85c54-c2b5-48a0-b4d8-2f0080156906", 0.50],
+  ["e081e9b5-2674-4c76-8fe4-d7e97ed9c76e", 0.50],
+  ["9a61b72c-ab1b-4fae-96e3-934d2aa2a697", 0.50],
+  ["39324029-4f37-41a8-8fa1-596d1b71570a", 0.50],
+  ["2c86a6f7-a527-4151-a541-7fa22922a914", 0.50],
+  ["cb24bd56-6030-4fed-8751-efcd8b39bfa3", 0.50],
+  ["b113aaf0-4c51-4451-9adf-e38eca36bf5b", 0.50],
+]);
 
 
 // 2 Special Users with 1% commission - Retailer gets 45% (0.45)
@@ -211,7 +231,11 @@ const TWO_SPECIAL_USERS_ONE_PERCENT = new Set([
 
 const getRetailerCommission = (transaction: Transaction) => {
   const totalCommission = Number(transaction.commission);
-  
+    // 🔥 NEW: use DB-mapped user_commision if present
+  if (userId && USER_COMMISSION_MAP.has(userId)) {
+    const userShare = USER_COMMISSION_MAP.get(userId)!;
+    return totalCommission * userShare;
+  }
   // Check which user group this belongs to
   if (TWO_SPECIAL_USERS_ONE_PERCENT.has(userId ?? "")) {
     // 2 Special users: Retailer gets 45% of total commission
